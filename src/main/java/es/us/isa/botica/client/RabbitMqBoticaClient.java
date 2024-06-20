@@ -75,10 +75,6 @@ public class RabbitMqBoticaClient implements BoticaClient {
     String protocolIn = String.format(BOT_PROTOCOL_IN_FORMAT, botConfiguration.getId());
     this.rabbitClient.createQueue(protocolIn);
     this.rabbitClient.bind(PROTOCOL_EXCHANGE, protocolIn, protocolIn);
-    new Thread(this::listenToPackets).start();
-  }
-
-  private void listenToPackets() {
     this.rabbitClient.subscribe(
         String.format(BOT_PROTOCOL_IN_FORMAT, botConfiguration.getId()), this::callPacketListeners);
   }
@@ -103,8 +99,8 @@ public class RabbitMqBoticaClient implements BoticaClient {
     this.rabbitClient.bind(ORDER_EXCHANGE, botOrdersName, botOrdersName);
     // bot_type orders queue is already created by director
 
-    new Thread(() -> this.listenToOrders(botOrdersName)).start();
-    new Thread(() -> this.listenToOrders(botTypeOrdersName)).start();
+    this.listenToOrders(botOrdersName);
+    this.listenToOrders(botTypeOrdersName);
   }
 
   private void listenToOrders(String queue) {
