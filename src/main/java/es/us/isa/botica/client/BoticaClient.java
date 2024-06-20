@@ -1,12 +1,11 @@
 package es.us.isa.botica.client;
 
-import es.us.isa.botica.configuration.broker.BrokerConfiguration;
 import es.us.isa.botica.protocol.Packet;
 import es.us.isa.botica.protocol.PacketListener;
 import java.util.concurrent.TimeoutException;
 
 public interface BoticaClient {
-  void connect(BrokerConfiguration brokerConfiguration) throws TimeoutException;
+  void connect() throws TimeoutException;
 
   boolean isConnected();
 

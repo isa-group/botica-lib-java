@@ -1,12 +1,17 @@
 package es.us.isa.botica.bot;
 
+import es.us.isa.botica.client.BoticaClient;
+import es.us.isa.botica.client.RabbitMqBoticaClient;
 import es.us.isa.botica.configuration.MainConfiguration;
+import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
+import es.us.isa.botica.configuration.bot.BotTypeConfiguration;
+import es.us.isa.botica.configuration.broker.BrokerConfiguration;
+import es.us.isa.botica.configuration.broker.RabbitMqConfiguration;
+import es.us.isa.botica.protocol.JacksonPacketConverter;
 import es.us.isa.botica.util.configuration.ConfigurationFileLoader;
 import es.us.isa.botica.util.configuration.JacksonConfigurationFileLoader;
 import java.io.File;
 import java.util.concurrent.TimeoutException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class that can be used to bootstrap and launch a {@link AbstractBotApplication} from a Java main
@@ -16,7 +21,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class BotApplicationRunner {
   private static final File CONFIG_FILE = new File("/run/secrets/botica-config");
-  private static final Logger log = LoggerFactory.getLogger(BotApplicationRunner.class);
 
   private BotApplicationRunner() {}
 
@@ -32,11 +36,11 @@ public final class BotApplicationRunner {
     String botType = System.getenv("BOTICA_BOT_TYPE");
     String botId = System.getenv("BOTICA_BOT_ID");
 
-    Bot bot =
-        new Bot(
-            configuration.getBrokerConfiguration(),
-            configuration.getBotTypes().get(botType),
-            botId);
+    BotTypeConfiguration typeConfiguration = configuration.getBotTypes().get(botType);
+    BotInstanceConfiguration botConfiguration = typeConfiguration.getInstances().get(botId);
+    BoticaClient boticaClient = buildClient(configuration, typeConfiguration, botConfiguration);
+
+    Bot bot = new Bot(boticaClient, typeConfiguration, botConfiguration);
     botApplication.setBot(bot);
     botApplication.configure();
     registerAction(botApplication, bot);
@@ -51,11 +55,23 @@ public final class BotApplicationRunner {
   private static MainConfiguration loadConfiguration(File file) {
     if (!file.isFile()) {
       throw new IllegalStateException(
-          "Couldn't find the needed configuration file. Are you manually starting the bot? The bot "
+          "Couldn't find the needed configuration file. Are you manually starting this bot? Bots "
               + "should be started inside a container conveniently created by the botica director!");
     }
     ConfigurationFileLoader configurationFileLoader = new JacksonConfigurationFileLoader();
     return configurationFileLoader.load(file, MainConfiguration.class);
+  }
+
+  private static BoticaClient buildClient(
+      MainConfiguration mainConfiguration,
+      BotTypeConfiguration typeConfiguration,
+      BotInstanceConfiguration botConfiguration) {
+    BrokerConfiguration brokerConfiguration = mainConfiguration.getBrokerConfiguration();
+    if (brokerConfiguration instanceof RabbitMqConfiguration) {
+      return new RabbitMqBoticaClient(
+          mainConfiguration, typeConfiguration, botConfiguration, new JacksonPacketConverter());
+    }
+    throw new UnsupportedOperationException("Unsupported broker type");
   }
 
   private static void registerAction(AbstractBotApplication botApplication, Bot bot) {

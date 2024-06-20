@@ -2,7 +2,6 @@ package es.us.isa.botica.bot;
 
 import es.us.isa.botica.client.BoticaClient;
 import es.us.isa.botica.client.OrderListener;
-import es.us.isa.botica.client.RabbitMqBoticaClient;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
 import es.us.isa.botica.configuration.bot.BotPublishConfiguration;
 import es.us.isa.botica.configuration.bot.BotTypeConfiguration;
@@ -10,9 +9,6 @@ import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleType;
 import es.us.isa.botica.configuration.bot.lifecycle.ProactiveBotLifecycleConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.ReactiveBotLifecycleConfiguration;
-import es.us.isa.botica.configuration.broker.BrokerConfiguration;
-import es.us.isa.botica.configuration.broker.RabbitMqConfiguration;
-import es.us.isa.botica.protocol.JacksonPacketConverter;
 import es.us.isa.botica.support.ShutdownHandler;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -35,7 +31,6 @@ import org.slf4j.LoggerFactory;
 public class Bot {
   private final Logger log;
 
-  private final BrokerConfiguration brokerConfiguration;
   private final BotTypeConfiguration botTypeConfiguration;
   private final BotInstanceConfiguration botConfiguration;
 
@@ -46,25 +41,12 @@ public class Bot {
   private ShutdownHandler shutdownHandler;
 
   public Bot(
-      BrokerConfiguration brokerConfiguration,
+      BoticaClient boticaClient,
       BotTypeConfiguration botTypeConfiguration,
-      String botId) {
-    this(
-        brokerConfiguration,
-        botTypeConfiguration,
-        botId,
-        buildBoticaClient(brokerConfiguration, botTypeConfiguration, botId));
-  }
-
-  public Bot(
-      BrokerConfiguration brokerConfiguration,
-      BotTypeConfiguration botTypeConfiguration,
-      String botId,
-      BoticaClient boticaClient) {
-    this.brokerConfiguration = brokerConfiguration;
-    this.botTypeConfiguration = botTypeConfiguration;
-    this.botConfiguration = botTypeConfiguration.getInstances().get(botId);
+      BotInstanceConfiguration botConfiguration) {
     this.boticaClient = boticaClient;
+    this.botTypeConfiguration = botTypeConfiguration;
+    this.botConfiguration = botConfiguration;
 
     this.log = LoggerFactory.getLogger("Bot - " + botConfiguration.getId());
   }
@@ -164,7 +146,7 @@ public class Bot {
    */
   public void start() throws TimeoutException {
     log.info("Establishing connection with the message broker...");
-    this.boticaClient.connect(this.brokerConfiguration);
+    this.boticaClient.connect();
     this.running = true;
     log.info("Connected to the message broker.");
 
@@ -220,17 +202,5 @@ public class Bot {
     return botConfiguration.getLifecycleConfiguration() != null
         ? botConfiguration.getLifecycleConfiguration()
         : botTypeConfiguration.getLifecycleConfiguration();
-  }
-
-  private static BoticaClient buildBoticaClient(
-      BrokerConfiguration brokerConfiguration,
-      BotTypeConfiguration typeConfiguration,
-      String botId) {
-    if (brokerConfiguration instanceof RabbitMqConfiguration) {
-      BotInstanceConfiguration botConfiguration = typeConfiguration.getInstances().get(botId);
-      return new RabbitMqBoticaClient(
-          typeConfiguration, botConfiguration, new JacksonPacketConverter());
-    }
-    throw new UnsupportedOperationException("Unsupported broker type");
   }
 }

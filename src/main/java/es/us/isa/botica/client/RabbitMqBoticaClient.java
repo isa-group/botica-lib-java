@@ -1,5 +1,6 @@
 package es.us.isa.botica.client;
 
+import static es.us.isa.botica.BoticaConstants.CONTAINER_PREFIX;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_ORDERS_FORMAT;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_PROTOCOL_IN_FORMAT;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_PROTOCOL_OUT_FORMAT;
@@ -8,11 +9,11 @@ import static es.us.isa.botica.rabbitmq.RabbitMqConstants.CONTAINER_NAME;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.ORDER_EXCHANGE;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.PROTOCOL_EXCHANGE;
 
+import es.us.isa.botica.configuration.MainConfiguration;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
 import es.us.isa.botica.configuration.bot.BotTypeConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleType;
-import es.us.isa.botica.configuration.broker.BrokerConfiguration;
 import es.us.isa.botica.configuration.broker.RabbitMqConfiguration;
 import es.us.isa.botica.protocol.Packet;
 import es.us.isa.botica.protocol.PacketConverter;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * RabbitMQ botica client implementation.
@@ -31,6 +34,9 @@ import org.json.JSONObject;
  * @author Alberto Mimbrero
  */
 public class RabbitMqBoticaClient implements BoticaClient {
+  private static final Logger log = LoggerFactory.getLogger(RabbitMqBoticaClient.class);
+
+  private final MainConfiguration mainConfiguration;
   private final BotTypeConfiguration typeConfiguration;
   private final BotInstanceConfiguration botConfiguration;
   private final PacketConverter packetConverter;
@@ -40,9 +46,11 @@ public class RabbitMqBoticaClient implements BoticaClient {
   private final Map<Class<?>, List<PacketListener<?>>> packetListeners = new HashMap<>();
 
   public RabbitMqBoticaClient(
+      MainConfiguration mainConfiguration,
       BotTypeConfiguration typeConfiguration,
       BotInstanceConfiguration botConfiguration,
       PacketConverter packetConverter) {
+    this.mainConfiguration = mainConfiguration;
     this.typeConfiguration = typeConfiguration;
     this.botConfiguration = botConfiguration;
     this.packetConverter = packetConverter;
@@ -50,10 +58,12 @@ public class RabbitMqBoticaClient implements BoticaClient {
   }
 
   @Override
-  public void connect(BrokerConfiguration brokerConfiguration) throws TimeoutException {
-    RabbitMqConfiguration configuration = (RabbitMqConfiguration) brokerConfiguration;
+  public void connect() throws TimeoutException {
+    RabbitMqConfiguration configuration =
+        (RabbitMqConfiguration) this.mainConfiguration.getBrokerConfiguration();
+
     this.rabbitClient.connect(
-        configuration.getUsername(), configuration.getPassword(), CONTAINER_NAME);
+        configuration.getUsername(), configuration.getPassword(), this.buildContainerName());
 
     this.enableProtocol();
     if (this.getLifecycleConfiguration().getType() == BotLifecycleType.REACTIVE) {
@@ -98,9 +108,11 @@ public class RabbitMqBoticaClient implements BoticaClient {
   }
 
   private void listenToOrders(String queue) {
+    log.debug("Listening to {}", queue);
     this.rabbitClient.subscribe(
         queue,
         message -> {
+          log.debug("Incoming message from queue {}: {}", queue, message);
           JSONObject root = new JSONObject(message);
           this.callOrderListeners(root.getString("order"), root.getString("message"));
         });
@@ -120,12 +132,14 @@ public class RabbitMqBoticaClient implements BoticaClient {
 
   @Override
   public void registerOrderListener(String order, OrderListener listener) {
+    log.debug("New order listener for {}", order);
     this.orderListeners.computeIfAbsent(order, k -> new ArrayList<>()).add(listener);
   }
 
   @Override
   public void publishOrder(String key, String order, String message) {
     String json = new JSONObject(Map.of("order", order, "message", message)).toString();
+    log.debug("Publishing order with key {}: {}", key, json);
     this.rabbitClient.publish(ORDER_EXCHANGE, key, json);
   }
 
@@ -152,5 +166,9 @@ public class RabbitMqBoticaClient implements BoticaClient {
     return botConfiguration.getLifecycleConfiguration() != null
         ? botConfiguration.getLifecycleConfiguration()
         : typeConfiguration.getLifecycleConfiguration();
+  }
+
+  private String buildContainerName() {
+    return CONTAINER_PREFIX + CONTAINER_NAME;
   }
 }
