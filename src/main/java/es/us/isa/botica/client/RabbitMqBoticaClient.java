@@ -116,8 +116,13 @@ public class RabbitMqBoticaClient implements BoticaClient {
 
   private void callOrderListeners(String order, String message) {
     List<OrderListener> listeners = this.orderListeners.get(order);
-    if (listeners != null) {
-      listeners.forEach(listener -> listener.onMessageReceived(order, message));
+    if (listeners == null) return;
+    for (OrderListener listener : listeners) {
+      try {
+        listener.onMessageReceived(order, message);
+      } catch (Exception e) {
+        log.error("an exception was risen during the bot action", e);
+      }
     }
   }
 
