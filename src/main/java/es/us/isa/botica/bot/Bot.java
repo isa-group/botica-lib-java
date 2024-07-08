@@ -10,6 +10,7 @@ import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleType;
 import es.us.isa.botica.configuration.bot.lifecycle.ProactiveBotLifecycleConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.ReactiveBotLifecycleConfiguration;
 import es.us.isa.botica.support.ShutdownHandler;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeoutException;
@@ -96,7 +97,7 @@ public class Bot {
     if (this.getLifecycleConfiguration().getType() != BotLifecycleType.REACTIVE) {
       throw new IllegalStateException("bot lifecycle type is not reactive");
     }
-    this.boticaClient.registerOrderListener(order, orderListener);
+    this.boticaClient.registerOrderListener(Objects.requireNonNull(order), orderListener);
   }
 
   /**
@@ -108,9 +109,13 @@ public class Bot {
   public void publishOrder(String message) {
     BotPublishConfiguration publishConfiguration =
         this.botTypeConfiguration.getPublishConfiguration();
-
-    this.boticaClient.publishOrder(
-        publishConfiguration.getKey(), publishConfiguration.getOrder(), message);
+    String key = publishConfiguration.getKey();
+    String order = publishConfiguration.getOrder();
+    if (key == null || key.isBlank() || order == null || order.isBlank()) {
+      throw new IllegalStateException(
+          "cannot publish order: no publish section present in the bot type configuration.");
+    }
+    this.publishOrder(publishConfiguration.getKey(), publishConfiguration.getOrder(), message);
   }
 
   /**
@@ -121,7 +126,10 @@ public class Bot {
    * @param message the message of the order
    */
   public void publishOrder(String key, String order, String message) {
-    this.boticaClient.publishOrder(key, order, message);
+    this.boticaClient.publishOrder(
+        Objects.requireNonNull(key),
+        Objects.requireNonNull(order),
+        Objects.requireNonNull(message));
   }
 
   /** Returns the shutdown handler of this bot */
