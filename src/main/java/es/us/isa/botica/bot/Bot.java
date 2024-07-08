@@ -204,6 +204,7 @@ public class Bot {
       throw new IllegalStateException("bot is not running");
     }
     this.boticaClient.close();
+    this.running = false;
   }
 
   private BotLifecycleConfiguration getLifecycleConfiguration() {
