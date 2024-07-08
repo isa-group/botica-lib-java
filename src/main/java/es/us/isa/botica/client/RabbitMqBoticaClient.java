@@ -75,8 +75,7 @@ public class RabbitMqBoticaClient implements BoticaClient {
     String protocolIn = String.format(BOT_PROTOCOL_IN_FORMAT, botConfiguration.getId());
     this.rabbitClient.createQueue(protocolIn);
     this.rabbitClient.bind(PROTOCOL_EXCHANGE, protocolIn, protocolIn);
-    this.rabbitClient.subscribe(
-        String.format(BOT_PROTOCOL_IN_FORMAT, botConfiguration.getId()), this::callPacketListeners);
+    this.rabbitClient.subscribe(protocolIn, this::callPacketListeners);
   }
 
   @SuppressWarnings("unchecked")
