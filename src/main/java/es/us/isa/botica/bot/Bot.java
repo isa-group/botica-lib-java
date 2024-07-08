@@ -11,8 +11,9 @@ import es.us.isa.botica.configuration.bot.lifecycle.ProactiveBotLifecycleConfigu
 import es.us.isa.botica.configuration.bot.lifecycle.ReactiveBotLifecycleConfiguration;
 import es.us.isa.botica.support.ShutdownHandler;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +24,9 @@ import org.slf4j.LoggerFactory;
  * <p>{@link #start() Starting} the bot does not block any thread. Necessary threads are started
  * internally for broker message listeners and proactive actions.
  *
- * <p><b>NOTE:</b> programmers are recommended to extend the {@link AbstractBotApplication} helper
- * class and use its convenience methods in order to create their own bots. For a more advanced use,
- * the bot object can be accessed with {@link AbstractBotApplication#getBot()}.
+ * <p><b>NOTE:</b> it is recommended to extend the {@link AbstractBotApplication} helper class and
+ * use its convenience methods in order to implement bots. For a more advanced use, the bot object
+ * can be accessed with {@link AbstractBotApplication#getBot()}.
  *
  * @author Alberto Mimbrero
  */
@@ -170,27 +171,54 @@ public class Bot {
     if (this.proactiveAction == null) {
       throw new IllegalStateException("undefined action for proactive bot");
     }
-
     ProactiveBotLifecycleConfiguration lifecycleConfiguration =
         (ProactiveBotLifecycleConfiguration) this.getLifecycleConfiguration();
-    Timer timer = new Timer();
-    timer.schedule(
-        new TimerTask() {
-          @Override
-          public void run() {
-            if (!isRunning()) {
-              cancel();
-              return;
-            }
-            try {
-              proactiveAction.run();
-            } catch (Exception e) {
-              log.error("an exception was risen during the bot action", e);
-            }
+
+    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    if (lifecycleConfiguration.getPeriod() > 0) {
+      this.scheduleRepeatingTask(lifecycleConfiguration, executorService);
+    } else {
+      this.scheduleTask(executorService, lifecycleConfiguration);
+    }
+  }
+
+  private void scheduleTask(
+      ScheduledExecutorService executorService,
+      ProactiveBotLifecycleConfiguration lifecycleConfiguration) {
+    executorService.schedule(
+        () -> {
+          if (isRunning()) {
+            this.runProactiveAction();
+            this.stop();
           }
+          executorService.shutdown();
         },
-        lifecycleConfiguration.getInitialDelay() * 1000,
-        lifecycleConfiguration.getPeriod() * 1000);
+        lifecycleConfiguration.getInitialDelay(),
+        TimeUnit.SECONDS);
+  }
+
+  private void scheduleRepeatingTask(
+      ProactiveBotLifecycleConfiguration lifecycleConfiguration,
+      ScheduledExecutorService executorService) {
+    executorService.scheduleWithFixedDelay(
+        () -> {
+          if (!isRunning()) {
+            executorService.shutdownNow();
+            return;
+          }
+          this.runProactiveAction();
+        },
+        lifecycleConfiguration.getInitialDelay(),
+        lifecycleConfiguration.getPeriod(),
+        TimeUnit.SECONDS);
+  }
+
+  private void runProactiveAction() {
+    try {
+      this.proactiveAction.run();
+    } catch (Exception e) {
+      log.error("an exception was risen during the bot action", e);
+    }
   }
 
   /** Returns whether the bot is running. */
@@ -203,8 +231,10 @@ public class Bot {
     if (!this.running) {
       throw new IllegalStateException("bot is not running");
     }
+    log.info("Closing connection with the message broker...");
     this.boticaClient.close();
     this.running = false;
+    log.info("Bot stopped.");
   }
 
   private BotLifecycleConfiguration getLifecycleConfiguration() {
