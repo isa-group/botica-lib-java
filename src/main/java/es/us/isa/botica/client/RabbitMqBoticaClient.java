@@ -4,16 +4,17 @@ import static es.us.isa.botica.BoticaConstants.CONTAINER_PREFIX;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_ORDERS_FORMAT;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_PROTOCOL_IN_FORMAT;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_PROTOCOL_OUT_FORMAT;
-import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_TYPE_ORDERS_FORMAT;
+import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_TYPE_ORDERS_BROADCAST_FORMAT;
+import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_TYPE_ORDERS_DISTRIBUTED_FORMAT;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.CONTAINER_NAME;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.ORDER_EXCHANGE;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.PROTOCOL_EXCHANGE;
 
 import es.us.isa.botica.configuration.MainConfiguration;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
+import es.us.isa.botica.configuration.bot.BotSubscribeConfiguration;
+import es.us.isa.botica.configuration.bot.BotSubscribeConfiguration.RoutingStrategy;
 import es.us.isa.botica.configuration.bot.BotTypeConfiguration;
-import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleConfiguration;
-import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleType;
 import es.us.isa.botica.configuration.broker.RabbitMqConfiguration;
 import es.us.isa.botica.protocol.Packet;
 import es.us.isa.botica.protocol.PacketConverter;
@@ -23,7 +24,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,9 +69,7 @@ public class RabbitMqBoticaClient implements BoticaClient {
         configuration.getUsername(), configuration.getPassword(), this.buildContainerName());
 
     this.enableProtocol();
-    if (this.getLifecycleConfiguration().getType() == BotLifecycleType.REACTIVE) {
-      this.enableOrders();
-    }
+    this.listenToOrders();
   }
 
   private void enableProtocol() {
@@ -90,16 +91,28 @@ public class RabbitMqBoticaClient implements BoticaClient {
     }
   }
 
-  private void enableOrders() {
-    String botOrdersName = String.format(BOT_ORDERS_FORMAT, botConfiguration.getId());
-    String botTypeOrdersName = String.format(BOT_TYPE_ORDERS_FORMAT, typeConfiguration.getId());
+  private void listenToOrders() {
+    Set<RoutingStrategy> strategies =
+        typeConfiguration.getSubscribeConfigurations().stream()
+            .map(BotSubscribeConfiguration::getStrategy)
+            .collect(Collectors.toSet());
 
-    this.rabbitClient.createQueue(botOrdersName);
-    this.rabbitClient.bind(ORDER_EXCHANGE, botOrdersName, botOrdersName);
-    // bot_type orders queue is already created by director
+    if (strategies.contains(RoutingStrategy.DISTRIBUTED)) {
+      String queue = String.format(BOT_TYPE_ORDERS_DISTRIBUTED_FORMAT, typeConfiguration.getId());
+      this.listenToOrders(queue);
+    }
+    if (strategies.contains(RoutingStrategy.BROADCAST)) {
+      String queue = String.format(BOT_TYPE_ORDERS_BROADCAST_FORMAT, typeConfiguration.getId());
+      this.listenToOrders(queue);
+    }
+    this.listenToOwnQueue();
+  }
 
-    this.listenToOrders(botOrdersName);
-    this.listenToOrders(botTypeOrdersName);
+  private void listenToOwnQueue() {
+    String botQueue = String.format(BOT_ORDERS_FORMAT, botConfiguration.getId());
+    this.rabbitClient.createQueue(botQueue);
+    this.rabbitClient.bind(ORDER_EXCHANGE, botQueue, botQueue);
+    this.listenToOrders(botQueue);
   }
 
   private void listenToOrders(String queue) {
@@ -120,7 +133,7 @@ public class RabbitMqBoticaClient implements BoticaClient {
       try {
         listener.onMessageReceived(order, message);
       } catch (Exception e) {
-        log.error("an exception was risen during the bot action", e);
+        log.error("An exception was thrown while consuming an order.", e);
       }
     }
   }
@@ -160,12 +173,6 @@ public class RabbitMqBoticaClient implements BoticaClient {
   @Override
   public void close() {
     this.rabbitClient.closeConnection();
-  }
-
-  private BotLifecycleConfiguration getLifecycleConfiguration() {
-    return botConfiguration.getLifecycleConfiguration() != null
-        ? botConfiguration.getLifecycleConfiguration()
-        : typeConfiguration.getLifecycleConfiguration();
   }
 
   private String buildContainerName() {
