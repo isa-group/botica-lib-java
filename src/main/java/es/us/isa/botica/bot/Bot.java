@@ -92,12 +92,8 @@ public class Bot {
    *
    * @param order the order to listen to
    * @param orderListener the listener to register
-   * @throws IllegalStateException if the bot lifecycle type is not {@code reactive}
    */
   public void registerOrderListener(String order, OrderListener orderListener) {
-    if (this.getLifecycleConfiguration().getType() != BotLifecycleType.REACTIVE) {
-      throw new IllegalStateException("bot lifecycle type is not reactive");
-    }
     this.boticaClient.registerOrderListener(Objects.requireNonNull(order), orderListener);
   }
 

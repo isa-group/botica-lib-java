@@ -1,5 +1,7 @@
 package es.us.isa.botica.bot;
 
+import es.us.isa.botica.client.OrderListener;
+
 /**
  * Helper class to define the logic of a bot.
  *
@@ -71,6 +73,16 @@ public abstract class AbstractBotApplication {
    * @param message the message received
    */
   public void onOrderReceived(String message) {}
+
+  /**
+   * Registers the given listener for the provided order.
+   *
+   * @param order the order to listen to
+   * @param orderListener the listener to register
+   */
+  protected void registerOrderListener(String order, OrderListener orderListener) {
+    this.bot.registerOrderListener(order, orderListener);
+  }
 
   /** Returns the ID of this bot. */
   protected String getBotId() {
