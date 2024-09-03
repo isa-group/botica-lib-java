@@ -1,6 +1,7 @@
 package es.us.isa.botica.bot;
 
 import es.us.isa.botica.client.OrderListener;
+import java.io.File;
 
 /**
  * Helper class to define the logic of a bot.
@@ -113,6 +114,11 @@ public abstract class AbstractBotApplication {
    */
   protected void publishOrder(String key, String order, String message) {
     this.bot.publishOrder(key, order, message);
+  }
+
+  /** Returns the shared directory for all bots provided by Botica. */
+  protected File getSharedDirectory() {
+    return this.bot.getSharedDirectory();
   }
 
   /** Returns the underlying {@link Bot} instance of this application. */

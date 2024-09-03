@@ -1,5 +1,6 @@
 package es.us.isa.botica.bot;
 
+import es.us.isa.botica.BoticaConstants;
 import es.us.isa.botica.client.BoticaClient;
 import es.us.isa.botica.client.OrderListener;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
@@ -10,6 +11,7 @@ import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleType;
 import es.us.isa.botica.configuration.bot.lifecycle.ProactiveBotLifecycleConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.ReactiveBotLifecycleConfiguration;
 import es.us.isa.botica.support.ShutdownHandler;
+import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,6 +33,8 @@ import org.slf4j.LoggerFactory;
  * @author Alberto Mimbrero
  */
 public class Bot {
+  private static final File SHARED_DIRECTORY = new File("/shared");
+
   private final Logger log;
 
   private final BotTypeConfiguration botTypeConfiguration;
@@ -127,6 +131,11 @@ public class Bot {
         Objects.requireNonNull(key),
         Objects.requireNonNull(order),
         Objects.requireNonNull(message));
+  }
+
+  /** Returns the shared directory for all bots provided by Botica. */
+  public File getSharedDirectory() {
+    return SHARED_DIRECTORY;
   }
 
   /** Returns the shutdown handler of this bot */
