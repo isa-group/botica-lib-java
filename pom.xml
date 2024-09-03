@@ -6,10 +6,11 @@
   <parent>
     <groupId>io.github.isa-group.botica</groupId>
     <artifactId>botica-parent</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
   </parent>
 
   <artifactId>botica-lib-java</artifactId>
+  <version>0.0.3</version>
 
   <dependencies>
     <dependency>
