@@ -1,6 +1,7 @@
 package es.us.isa.botica.bot;
 
 import es.us.isa.botica.client.OrderListener;
+import es.us.isa.botica.util.ContainerUtils;
 import java.io.File;
 
 /**
@@ -114,6 +115,21 @@ public abstract class AbstractBotApplication {
    */
   protected void publishOrder(String key, String order, String message) {
     this.bot.publishOrder(key, order, message);
+  }
+
+  /** Returns the hostname of this bot's container. */
+  protected String getHostname() {
+    return this.bot.getHostname();
+  }
+
+  /**
+   * Returns the hostname of the given bot's container.
+   *
+   * @param botId the ID of the bot instance
+   * @return the bot container's hostname
+   */
+  protected String getBotHostname(String botId) {
+    return ContainerUtils.getHostname(botId);
   }
 
   /** Returns the shared directory for all bots provided by Botica. */

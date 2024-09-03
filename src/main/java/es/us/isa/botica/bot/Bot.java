@@ -1,6 +1,5 @@
 package es.us.isa.botica.bot;
 
-import es.us.isa.botica.BoticaConstants;
 import es.us.isa.botica.client.BoticaClient;
 import es.us.isa.botica.client.OrderListener;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
@@ -11,6 +10,7 @@ import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleType;
 import es.us.isa.botica.configuration.bot.lifecycle.ProactiveBotLifecycleConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.ReactiveBotLifecycleConfiguration;
 import es.us.isa.botica.support.ShutdownHandler;
+import es.us.isa.botica.util.ContainerUtils;
 import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -131,6 +131,11 @@ public class Bot {
         Objects.requireNonNull(key),
         Objects.requireNonNull(order),
         Objects.requireNonNull(message));
+  }
+
+  /** Returns the hostname of this bot's container. */
+  public String getHostname() {
+    return ContainerUtils.getHostname(this.botConfiguration.getId());
   }
 
   /** Returns the shared directory for all bots provided by Botica. */
