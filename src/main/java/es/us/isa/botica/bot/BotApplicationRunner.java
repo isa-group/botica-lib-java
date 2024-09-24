@@ -1,7 +1,7 @@
 package es.us.isa.botica.bot;
 
-import es.us.isa.botica.client.BoticaClient;
-import es.us.isa.botica.client.RabbitMqBoticaClient;
+import es.us.isa.botica.protocol.BoticaClient;
+import es.us.isa.botica.protocol.RabbitMqBoticaClient;
 import es.us.isa.botica.configuration.MainConfiguration;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
 import es.us.isa.botica.configuration.bot.BotTypeConfiguration;

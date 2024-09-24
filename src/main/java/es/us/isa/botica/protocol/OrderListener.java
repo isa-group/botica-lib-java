@@ -1,4 +1,4 @@
-package es.us.isa.botica.client;
+package es.us.isa.botica.protocol;
 
 @FunctionalInterface
 public interface OrderListener {

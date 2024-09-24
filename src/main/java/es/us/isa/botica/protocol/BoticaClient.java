@@ -1,7 +1,5 @@
-package es.us.isa.botica.client;
+package es.us.isa.botica.protocol;
 
-import es.us.isa.botica.protocol.Packet;
-import es.us.isa.botica.protocol.PacketListener;
 import java.util.concurrent.TimeoutException;
 
 public interface BoticaClient {

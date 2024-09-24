@@ -1,7 +1,6 @@
 package es.us.isa.botica.bot;
 
-import es.us.isa.botica.client.BoticaClient;
-import es.us.isa.botica.client.OrderListener;
+import es.us.isa.botica.bot.shutdown.ShutdownHandler;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
 import es.us.isa.botica.configuration.bot.BotPublishConfiguration;
 import es.us.isa.botica.configuration.bot.BotTypeConfiguration;
@@ -9,7 +8,10 @@ import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleType;
 import es.us.isa.botica.configuration.bot.lifecycle.ProactiveBotLifecycleConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.ReactiveBotLifecycleConfiguration;
-import es.us.isa.botica.support.ShutdownHandler;
+import es.us.isa.botica.protocol.BoticaClient;
+import es.us.isa.botica.protocol.HeartbeatPacket;
+import es.us.isa.botica.protocol.OrderListener;
+import es.us.isa.botica.protocol.client.ReadyPacket;
 import es.us.isa.botica.util.ContainerUtils;
 import java.io.File;
 import java.util.Objects;
@@ -36,6 +38,7 @@ public class Bot {
   private static final File SHARED_DIRECTORY = new File("/shared");
 
   private final Logger log;
+  private final ShutdownHandler shutdownHandler;
 
   private final BotTypeConfiguration botTypeConfiguration;
   private final BotInstanceConfiguration botConfiguration;
@@ -44,13 +47,14 @@ public class Bot {
   private boolean running = false;
 
   private Runnable proactiveAction;
-  private ShutdownHandler shutdownHandler;
 
   public Bot(
       BoticaClient boticaClient,
       BotTypeConfiguration botTypeConfiguration,
       BotInstanceConfiguration botConfiguration) {
     this.boticaClient = boticaClient;
+    this.shutdownHandler = new ShutdownHandler(this.boticaClient);
+
     this.botTypeConfiguration = botTypeConfiguration;
     this.botConfiguration = botConfiguration;
 
@@ -169,12 +173,17 @@ public class Bot {
     this.running = true;
     log.info("Connected to the message broker.");
 
-    this.shutdownHandler = new ShutdownHandler(this.boticaClient);
-
     if (this.getLifecycleConfiguration().getType() == BotLifecycleType.PROACTIVE) {
       this.startProactiveScheduler();
     }
+    this.setupHeartbeat();
+    this.boticaClient.sendPacket(new ReadyPacket());
     log.info("Bot started.");
+  }
+
+  private void setupHeartbeat() {
+    this.boticaClient.registerPacketListener(
+        HeartbeatPacket.class, packet -> this.boticaClient.sendPacket(new HeartbeatPacket()));
   }
 
   private void startProactiveScheduler() {

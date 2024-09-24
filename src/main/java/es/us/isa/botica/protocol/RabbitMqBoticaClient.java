@@ -1,12 +1,12 @@
-package es.us.isa.botica.client;
+package es.us.isa.botica.protocol;
 
 import static es.us.isa.botica.BoticaConstants.CONTAINER_PREFIX;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_ORDERS_FORMAT;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_PROTOCOL_IN_FORMAT;
-import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_PROTOCOL_OUT_FORMAT;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_TYPE_ORDERS_BROADCAST_FORMAT;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.BOT_TYPE_ORDERS_DISTRIBUTED_FORMAT;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.CONTAINER_NAME;
+import static es.us.isa.botica.rabbitmq.RabbitMqConstants.DIRECTOR_PROTOCOL;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.ORDER_EXCHANGE;
 import static es.us.isa.botica.rabbitmq.RabbitMqConstants.PROTOCOL_EXCHANGE;
 
@@ -16,9 +16,7 @@ import es.us.isa.botica.configuration.bot.BotSubscribeConfiguration;
 import es.us.isa.botica.configuration.bot.BotSubscribeConfiguration.RoutingStrategy;
 import es.us.isa.botica.configuration.bot.BotTypeConfiguration;
 import es.us.isa.botica.configuration.broker.RabbitMqConfiguration;
-import es.us.isa.botica.protocol.Packet;
-import es.us.isa.botica.protocol.PacketConverter;
-import es.us.isa.botica.protocol.PacketListener;
+import es.us.isa.botica.protocol.client.BotPacket;
 import es.us.isa.botica.rabbitmq.RabbitMqClient;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * RabbitMQ botica client implementation.
+ * RabbitMQ client implementation for the botica protocol.
  *
  * @author Alberto Mimbrero
  */
@@ -164,10 +162,9 @@ public class RabbitMqBoticaClient implements BoticaClient {
 
   @Override
   public void sendPacket(Packet packet) {
-    this.rabbitClient.publish(
-        PROTOCOL_EXCHANGE,
-        String.format(BOT_PROTOCOL_OUT_FORMAT, botConfiguration.getId()),
-        packetConverter.serialize(packet));
+    BotPacket wrapper = new BotPacket(this.botConfiguration.getId(), packet);
+    String raw = this.packetConverter.serialize(wrapper);
+    this.rabbitClient.publish(PROTOCOL_EXCHANGE, DIRECTOR_PROTOCOL, raw);
   }
 
   @Override

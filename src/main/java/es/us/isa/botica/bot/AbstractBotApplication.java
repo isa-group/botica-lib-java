@@ -1,6 +1,7 @@
 package es.us.isa.botica.bot;
 
-import es.us.isa.botica.client.OrderListener;
+import es.us.isa.botica.bot.shutdown.ShutdownHandler;
+import es.us.isa.botica.protocol.OrderListener;
 import es.us.isa.botica.util.ContainerUtils;
 import java.io.File;
 
@@ -135,6 +136,13 @@ public abstract class AbstractBotApplication {
   /** Returns the shared directory for all bots provided by Botica. */
   protected File getSharedDirectory() {
     return this.bot.getSharedDirectory();
+  }
+
+  /**
+   * Returns the shutdown handler of this bot.
+   */
+  protected ShutdownHandler getShutdownHandler() {
+    return this.bot.getShutdownHandler();
   }
 
   /** Returns the underlying {@link Bot} instance of this application. */
