@@ -2,7 +2,6 @@ package es.us.isa.botica.bot;
 
 import es.us.isa.botica.bot.shutdown.ShutdownHandler;
 import es.us.isa.botica.protocol.OrderListener;
-import es.us.isa.botica.util.ContainerUtils;
 import java.io.File;
 
 /**
@@ -130,7 +129,7 @@ public abstract class AbstractBotApplication {
    * @return the bot container's hostname
    */
   protected String getBotHostname(String botId) {
-    return ContainerUtils.getHostname(botId);
+    return this.bot.getBotHostname(botId);
   }
 
   /** Returns the shared directory for all bots provided by Botica. */
