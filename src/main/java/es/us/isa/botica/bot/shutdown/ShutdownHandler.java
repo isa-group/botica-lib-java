@@ -11,11 +11,9 @@ import org.slf4j.LoggerFactory;
 public class ShutdownHandler {
   private static final Logger log = LoggerFactory.getLogger(ShutdownHandler.class);
 
-  private final BoticaClient boticaClient;
   private final List<ShutdownRequestHook> shutdownRequestHooks = new ArrayList<>();
 
   public ShutdownHandler(BoticaClient boticaClient) {
-    this.boticaClient = boticaClient;
     boticaClient.registerPacketListener(ShutdownRequestPacket.class, this::onShutdownRequest);
   }
 
@@ -37,7 +35,7 @@ public class ShutdownHandler {
     this.shutdownRequestHooks.remove(hook);
   }
 
-  private void onShutdownRequest(ShutdownRequestPacket packet) {
+  private ShutdownResponsePacket onShutdownRequest(ShutdownRequestPacket packet) {
     ShutdownRequest request = new ShutdownRequest(packet.isForced());
     for (ShutdownRequestHook hook : this.shutdownRequestHooks) {
       try {
@@ -46,6 +44,6 @@ public class ShutdownHandler {
         log.error("An exception occurred while executing a shutdown hook.", e);
       }
     }
-    boticaClient.sendPacket(new ShutdownResponsePacket(!request.isCanceled()));
+    return new ShutdownResponsePacket(!request.isCanceled());
   }
 }
