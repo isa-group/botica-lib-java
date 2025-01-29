@@ -196,16 +196,6 @@ public class RabbitMqBoticaClient implements BoticaClient {
   @Override
   public <ResponsePacketT extends ResponsePacket> void sendPacket(
       RequestPacket<ResponsePacketT> packet,
-      String botId,
-      PacketListener<ResponsePacketT> callback,
-      Runnable timeoutCallback) {
-    this.sendPacket(packet, botId, callback, timeoutCallback, 3, TimeUnit.SECONDS);
-  }
-
-  @Override
-  public <ResponsePacketT extends ResponsePacket> void sendPacket(
-      RequestPacket<ResponsePacketT> packet,
-      String botId,
       PacketListener<ResponsePacketT> callback,
       Runnable timeoutCallback,
       long timeout,

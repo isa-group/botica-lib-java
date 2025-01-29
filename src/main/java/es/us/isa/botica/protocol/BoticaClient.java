@@ -23,15 +23,15 @@ public interface BoticaClient {
 
   void sendPacket(Packet packet);
 
-  <ResponsePacketT extends ResponsePacket> void sendPacket(
+  default <ResponsePacketT extends ResponsePacket> void sendPacket(
       RequestPacket<ResponsePacketT> packet,
-      String botId,
       PacketListener<ResponsePacketT> callback,
-      Runnable timeoutCallback);
+      Runnable timeoutCallback) {
+    this.sendPacket(packet, callback, timeoutCallback, 3, TimeUnit.SECONDS);
+  }
 
   <ResponsePacketT extends ResponsePacket> void sendPacket(
       RequestPacket<ResponsePacketT> packet,
-      String botId,
       PacketListener<ResponsePacketT> callback,
       Runnable timeoutCallback,
       long timeout,
