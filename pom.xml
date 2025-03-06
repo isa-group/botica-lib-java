@@ -19,4 +19,8 @@
       <version>0.2.0</version>
     </dependency>
   </dependencies>
+
+  <build>
+    <defaultGoal>clean install</defaultGoal>
+  </build>
 </project>
