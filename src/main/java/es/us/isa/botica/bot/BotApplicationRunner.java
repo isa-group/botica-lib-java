@@ -50,6 +50,7 @@ public final class BotApplicationRunner {
     } catch (TimeoutException e) {
       throw new RuntimeException(e);
     }
+    botApplication.onStart();
   }
 
   private static MainConfiguration loadConfiguration(File file) {

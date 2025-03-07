@@ -69,7 +69,7 @@ public class Bot {
    */
   public void setProactiveAction(Runnable action) {
     if (this.getLifecycleConfiguration().getType() != BotLifecycleType.PROACTIVE) {
-      throw new IllegalStateException("bot lifecycle type is not proactive");
+      throw new IllegalStateException("Bot lifecycle type is not proactive");
     }
     this.proactiveAction = action;
   }
@@ -96,7 +96,7 @@ public class Bot {
 
     if (order == null) {
       throw new IllegalStateException(
-          "no default order specified for this bot in the environment configuration file");
+          "No default order specified for this bot in the environment configuration file");
     }
     this.registerOrderListener(order, orderListener);
   }
@@ -116,6 +116,7 @@ public class Bot {
    * configuration file.
    *
    * @param message the message of the order
+   * @throws IllegalStateException if the bot type configuration does not specify a publish section
    */
   public void publishOrder(String message) {
     BotPublishConfiguration publishConfiguration =
@@ -124,7 +125,7 @@ public class Bot {
     String order = publishConfiguration.getOrder();
     if (key == null || key.isBlank() || order == null || order.isBlank()) {
       throw new IllegalStateException(
-          "cannot publish order: no publish section present in the bot type configuration.");
+          "Cannot publish order: no publish section present in the bot type configuration.");
     }
     this.publishOrder(publishConfiguration.getKey(), publishConfiguration.getOrder(), message);
   }
@@ -204,7 +205,7 @@ public class Bot {
 
   private void startProactiveScheduler() {
     if (this.proactiveAction == null) {
-      throw new IllegalStateException("undefined action for proactive bot");
+      throw new IllegalStateException("Undefined action for proactive bot");
     }
     ProactiveBotLifecycleConfiguration lifecycleConfiguration =
         (ProactiveBotLifecycleConfiguration) this.getLifecycleConfiguration();

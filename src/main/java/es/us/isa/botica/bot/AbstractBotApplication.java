@@ -47,19 +47,26 @@ public abstract class AbstractBotApplication {
   /**
    * Called before the bot is started and the connection with the message broker is established.
    *
-   * <p>Use this method to configure the bot beyond the proactive action or the main order listener,
-   * like registering a shutdown hook.
+   * <p>Override this method to perform additional configuration, such as registering shutdown hooks
+   * or setting up extra order listeners.
    */
   public void configure() {}
 
   /**
-   * Called repeatedly to execute the proactive action of the bot.
+   * Called when the bot starts running.
    *
-   * <p>The initial delay and period parameters are taken from the lifecycle section of this bot's
-   * type in the main configuration file.
+   * <p>Override this method to define any startup logic, such as initializing resources or logging
+   * bot startup details.
+   */
+  public void onStart() {}
+
+  /**
+   * Executes the bot's proactive action at regular intervals.
    *
-   * <p><b>NOTE:</b> this method will not be called if the bot's lifecycle type is not {@code
-   * proactive}.
+   * <p>The execution schedule (initial delay and period) is defined in the bot's lifecycle
+   * configuration.
+   *
+   * <p><b>Note:</b> This method is only invoked if the bot's lifecycle type is {@code proactive}.
    */
   public void executeAction() {}
 
@@ -101,6 +108,7 @@ public abstract class AbstractBotApplication {
    * configuration file.
    *
    * @param message the message of the order
+   * @throws IllegalStateException if the bot type configuration does not specify a publish section
    */
   protected void publishOrder(String message) {
     this.bot.publishOrder(message);
@@ -137,9 +145,7 @@ public abstract class AbstractBotApplication {
     return this.bot.getSharedDirectory();
   }
 
-  /**
-   * Returns the shutdown handler of this bot.
-   */
+  /** Returns the shutdown handler of this bot. */
   protected ShutdownHandler getShutdownHandler() {
     return this.bot.getShutdownHandler();
   }
