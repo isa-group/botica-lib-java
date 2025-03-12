@@ -7,9 +7,9 @@ package es.us.isa.botica.bot.shutdown;
  * shutdown request:
  *
  * <pre>
- * getShutdownHandler().registerShutdownRequestHook(request -> {
+ * getShutdownHandler().registerShutdownRequestHook((request, response) -> {
  *   if (this.isRunning()) { // some method to check if the bot is still executing a task
- *     request.cancel(); // this will have no effect if request.isForced() is true
+ *     response.cancel(); // this will have no effect if request.isForced() is true
  *   }
  * });
  * </pre>
@@ -30,5 +30,5 @@ package es.us.isa.botica.bot.shutdown;
  */
 @FunctionalInterface
 public interface ShutdownRequestHook {
-  void onShutdownRequest(ShutdownRequest request);
+  void onShutdownRequest(ShutdownRequest request, ShutdownResponse response);
 }

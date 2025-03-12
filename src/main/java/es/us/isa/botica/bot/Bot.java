@@ -26,11 +26,11 @@ import org.slf4j.LoggerFactory;
  * A bot instance in a botica environment.
  *
  * <p>{@link #start() Starting} the bot does not block any thread. Necessary threads are started
- * internally for broker message listeners and proactive actions.
+ * internally for broker message listeners and other tasks.
  *
- * <p><b>NOTE:</b> it is recommended to extend the {@link AbstractBotApplication} helper class and
- * use its convenience methods in order to implement bots. For a more advanced use, the bot object
- * can be accessed with {@link AbstractBotApplication#getBot()}.
+ * <p><b>NOTE:</b> it is recommended to extend the {@link BaseBot} helper class and use its
+ * convenience methods in order to implement bots. For a more advanced use, the bot object can be
+ * accessed with {@link BaseBot#getBot()}.
  *
  * @author Alberto Mimbrero
  */
@@ -46,7 +46,7 @@ public class Bot {
   private final BoticaClient boticaClient;
   private boolean running = false;
 
-  private Runnable proactiveAction;
+  private Runnable proactiveTask;
 
   public Bot(
       BoticaClient boticaClient,
@@ -62,21 +62,22 @@ public class Bot {
   }
 
   /**
-   * Sets the action for this bot.
+   * Sets the proactive task for this bot.
    *
-   * @param action the action to set
+   * @param task the task to set
    * @throws IllegalStateException if the bot lifecycle type is not {@code proactive}
    */
-  public void setProactiveAction(Runnable action) {
+  public void setProactiveTask(Runnable task) {
     if (this.getLifecycleConfiguration().getType() != BotLifecycleType.PROACTIVE) {
-      throw new IllegalStateException("Bot lifecycle type is not proactive");
+      throw new IllegalStateException(
+          "Cannot register a proactive task because this bot is not configured as proactive.");
     }
-    this.proactiveAction = action;
+    this.proactiveTask = task;
   }
 
-  /** Returns whether the proactive action is set. */
-  public boolean isProactiveActionSet() {
-    return this.proactiveAction != null;
+  /** Returns whether the proactive task is set. */
+  public boolean isProactiveTaskSet() {
+    return this.proactiveTask != null;
   }
 
   /**
@@ -204,8 +205,9 @@ public class Bot {
   }
 
   private void startProactiveScheduler() {
-    if (this.proactiveAction == null) {
-      throw new IllegalStateException("Undefined action for proactive bot");
+    if (this.proactiveTask == null) {
+      throw new IllegalStateException(
+          "This bot is configured as a proactive bot, but no proactive task has been registered.");
     }
     ProactiveBotLifecycleConfiguration lifecycleConfiguration =
         (ProactiveBotLifecycleConfiguration) this.getLifecycleConfiguration();
@@ -224,7 +226,7 @@ public class Bot {
     executorService.schedule(
         () -> {
           if (isRunning()) {
-            this.runProactiveAction();
+            this.runProactiveTask();
             this.stop();
           }
           executorService.shutdown();
@@ -242,18 +244,18 @@ public class Bot {
             executorService.shutdownNow();
             return;
           }
-          this.runProactiveAction();
+          this.runProactiveTask();
         },
         lifecycleConfiguration.getInitialDelay(),
         lifecycleConfiguration.getPeriod(),
         TimeUnit.SECONDS);
   }
 
-  private void runProactiveAction() {
+  private void runProactiveTask() {
     try {
-      this.proactiveAction.run();
+      this.proactiveTask.run();
     } catch (Exception e) {
-      log.error("an exception was risen during the bot action", e);
+      log.error("an exception was risen during the bot proactive task", e);
     }
   }
 

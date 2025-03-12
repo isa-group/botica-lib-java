@@ -37,13 +37,14 @@ public class ShutdownHandler {
 
   private ShutdownResponsePacket onShutdownRequest(ShutdownRequestPacket packet) {
     ShutdownRequest request = new ShutdownRequest(packet.isForced());
+    ShutdownResponse response = new ShutdownResponse();
     for (ShutdownRequestHook hook : this.shutdownRequestHooks) {
       try {
-        hook.onShutdownRequest(request);
+        hook.onShutdownRequest(request, response);
       } catch (Exception e) {
         log.error("An exception occurred while executing a shutdown hook.", e);
       }
     }
-    return new ShutdownResponsePacket(!request.isCanceled());
+    return new ShutdownResponsePacket(!response.isCanceled());
   }
 }
