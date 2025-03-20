@@ -1,8 +1,11 @@
 package es.us.isa.botica.bot;
 
+import es.us.isa.botica.bot.order.OrderMessageTypeConverter;
 import es.us.isa.botica.bot.shutdown.ShutdownHandler;
+import es.us.isa.botica.inspect.ComponentInspector;
 import es.us.isa.botica.protocol.OrderListener;
 import java.io.File;
+import java.lang.reflect.Type;
 
 /**
  * Base class for defining a Botica bot.
@@ -43,6 +46,7 @@ import java.io.File;
  * @author Alberto Mimbrero
  */
 public abstract class BaseBot {
+  private final ComponentInspector componentInspector = new ComponentInspector();
   private Bot bot;
 
   /**
@@ -53,6 +57,7 @@ public abstract class BaseBot {
    * <ul>
    *   <li>Registering shutdown hooks
    *   <li>Setting up additional order listeners programmatically
+   *   <li>Registering {@link OrderMessageTypeConverter order message type converters}
    * </ul>
    *
    * <p><b>Note:</b> This method is intended only for bot configuration. The connection with the
@@ -148,6 +153,64 @@ public abstract class BaseBot {
   /** Returns the shutdown handler of this bot. */
   protected ShutdownHandler getShutdownHandler() {
     return this.bot.getShutdownHandler();
+  }
+
+  public ComponentInspector getComponentInspector() {
+    return componentInspector;
+  }
+
+  /**
+   * Registers a type converter for handling parameters in {@code @OrderHandler} methods.
+   *
+   * <p>This converter will transform incoming message strings into objects of the types provided in
+   * the given converter when a handler method expects a parameter of the registered type.
+   *
+   * <p><strong>IMPORTANT:</strong> Converters must be registered during the {@link #configure()}
+   * phase of the bot's lifecycle. Registrations made later may have no effect.
+   *
+   * @param converter the converter implementation for transforming messages of the specified types
+   *     in {@link OrderMessageTypeConverter#getSupportedTypes()}
+   * @see OrderMessageTypeConverter
+   */
+  protected void registerOrderMessageTypeConverter(OrderMessageTypeConverter<?> converter) {
+    this.componentInspector.registerOrderMessageTypeConverter(converter);
+  }
+
+  /**
+   * Registers a type converter for handling parameters in {@code @OrderHandler} methods.
+   *
+   * <p>This converter will transform incoming message strings into objects of type {@code T} when a
+   * handler method expects a parameter of the registered type.
+   *
+   * <p><strong>IMPORTANT:</strong> Converters must be registered during the {@link #configure()}
+   * phase of the bot's lifecycle. Registrations made later may have no effect.
+   *
+   * @param <T> the target type that the converter produces
+   * @param type the class representing the parameter type this converter handles
+   * @param converter the converter implementation for transforming messages to type T
+   * @see OrderMessageTypeConverter
+   */
+  protected <T> void registerOrderMessageTypeConverter(
+      Class<T> type, OrderMessageTypeConverter<T> converter) {
+    this.componentInspector.registerOrderMessageTypeConverter(type, converter);
+  }
+
+  /**
+   * Registers a type converter for handling parameters in {@code @OrderHandler} methods.
+   *
+   * <p>This converter will transform incoming message strings into objects of the given type when a
+   * handler method expects a parameter of the registered type.
+   *
+   * <p><strong>IMPORTANT:</strong> Converters must be registered during the {@link #configure()}
+   * phase of the bot's lifecycle. Registrations made later may have no effect.
+   *
+   * @param type the class representing the parameter type this converter handles
+   * @param converter the converter implementation for transforming messages to the given type
+   * @see OrderMessageTypeConverter
+   */
+  protected void registerOrderMessageTypeConverter(
+      Type type, OrderMessageTypeConverter<?> converter) {
+    this.componentInspector.registerOrderMessageTypeConverter(type, converter);
   }
 
   /** Returns the underlying {@link Bot} instance of this object. */

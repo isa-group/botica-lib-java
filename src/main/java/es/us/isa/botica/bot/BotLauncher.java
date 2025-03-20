@@ -8,7 +8,6 @@ import es.us.isa.botica.configuration.broker.RabbitMqConfiguration;
 import es.us.isa.botica.protocol.BoticaClient;
 import es.us.isa.botica.protocol.JacksonPacketConverter;
 import es.us.isa.botica.protocol.RabbitMqBoticaClient;
-import es.us.isa.botica.reflect.ComponentInspector;
 import es.us.isa.botica.util.configuration.ConfigurationFileLoader;
 import es.us.isa.botica.util.configuration.jackson.JacksonConfigurationFileLoader;
 import java.io.File;
@@ -44,7 +43,7 @@ public final class BotLauncher {
     userBot.setBot(coreBot);
     userBot.configure();
 
-    ComponentInspector.registerHandlerMethods(coreBot, userBot.getClass(), userBot);
+    userBot.getComponentInspector().registerHandlerMethods(coreBot, userBot.getClass(), userBot);
 
     try {
       coreBot.start();

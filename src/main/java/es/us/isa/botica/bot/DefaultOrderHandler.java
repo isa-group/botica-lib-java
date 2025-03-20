@@ -1,5 +1,7 @@
 package es.us.isa.botica.bot;
 
+import es.us.isa.botica.bot.order.JacksonOrderMessageTypeConverter;
+import es.us.isa.botica.bot.order.OrderMessageTypeConverter;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -10,6 +12,27 @@ import java.lang.annotation.Target;
  *
  * <p>Methods annotated with {@code @DefaultOrderHandler} will be automatically registered to handle
  * the default order defined in the bot's lifecycle configuration.
+ *
+ * <p>Handler methods can have zero or one parameter. When a parameter is present, the system will
+ * automatically convert the incoming message string to the parameter type using registered {@link
+ * OrderMessageTypeConverter}s. By default, the system supports:
+ *
+ * <ul>
+ *   <li>{@code String} parameters (passes the message string directly)
+ *   <li>{@code JSONMessage} parameters (parses the message as JSON)
+ * </ul>
+ *
+ * <p>For automatic deserialization to any Java type, you can register the {@link
+ * JacksonOrderMessageTypeConverter Jackson converter}:
+ *
+ * <pre>
+ * &#64;Override
+ * public void configure() {
+ *   registerOrderMessageTypeConverter(new JacksonOrderMessageTypeConverter());
+ * }
+ * </pre>
+ *
+ * <p>Custom converters can be registered using {@code registerOrderMessageTypeConverter()}.
  *
  * <p><b>Note:</b> There should be only one method annotated with {@code @DefaultOrderHandler} per
  * bot. If multiple methods are annotated, an exception will be thrown.

@@ -1,4 +1,4 @@
-package es.us.isa.botica.reflect;
+package es.us.isa.botica.inspect;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
