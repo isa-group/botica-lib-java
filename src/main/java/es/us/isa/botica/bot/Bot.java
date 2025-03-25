@@ -4,7 +4,6 @@ import es.us.isa.botica.BoticaConstants;
 import es.us.isa.botica.bot.shutdown.ShutdownHandler;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
 import es.us.isa.botica.configuration.bot.BotPublishConfiguration;
-import es.us.isa.botica.configuration.bot.BotTypeConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleConfiguration;
 import es.us.isa.botica.configuration.bot.lifecycle.BotLifecycleType;
 import es.us.isa.botica.configuration.bot.lifecycle.ProactiveBotLifecycleConfiguration;
@@ -38,27 +37,19 @@ public class Bot {
   private static final File SHARED_DIRECTORY = new File("/shared");
 
   private final Logger log;
+  private final BoticaClient boticaClient;
+  private final BotInstanceConfiguration configuration;
   private final ShutdownHandler shutdownHandler;
 
-  private final BotTypeConfiguration botTypeConfiguration;
-  private final BotInstanceConfiguration botConfiguration;
-
-  private final BoticaClient boticaClient;
   private boolean running = false;
-
   private Runnable proactiveTask;
 
-  public Bot(
-      BoticaClient boticaClient,
-      BotTypeConfiguration botTypeConfiguration,
-      BotInstanceConfiguration botConfiguration) {
+  public Bot(BoticaClient boticaClient, BotInstanceConfiguration configuration) {
     this.boticaClient = boticaClient;
+    this.configuration = configuration;
     this.shutdownHandler = new ShutdownHandler(this.boticaClient);
 
-    this.botTypeConfiguration = botTypeConfiguration;
-    this.botConfiguration = botConfiguration;
-
-    this.log = LoggerFactory.getLogger("Bot - " + botConfiguration.getId());
+    this.log = LoggerFactory.getLogger("Bot - " + configuration.getId());
   }
 
   /**
@@ -68,7 +59,7 @@ public class Bot {
    * @throws IllegalStateException if the bot lifecycle type is not {@code proactive}
    */
   public void setProactiveTask(Runnable task) {
-    if (this.getLifecycleConfiguration().getType() != BotLifecycleType.PROACTIVE) {
+    if (configuration.getLifecycleConfiguration().getType() != BotLifecycleType.PROACTIVE) {
       throw new IllegalStateException(
           "Cannot register a proactive task because this bot is not configured as proactive.");
     }
@@ -89,7 +80,8 @@ public class Bot {
    *     botica environment configuration
    */
   public void registerOrderListener(OrderListener orderListener) {
-    BotLifecycleConfiguration lifecycleConfiguration = this.getLifecycleConfiguration();
+    BotLifecycleConfiguration lifecycleConfiguration =
+        this.configuration.getLifecycleConfiguration();
     String order =
         lifecycleConfiguration instanceof ReactiveBotLifecycleConfiguration
             ? ((ReactiveBotLifecycleConfiguration) lifecycleConfiguration).getOrder()
@@ -121,7 +113,7 @@ public class Bot {
    */
   public void publishOrder(String message) {
     BotPublishConfiguration publishConfiguration =
-        this.botTypeConfiguration.getPublishConfiguration();
+        this.configuration.getTypeConfiguration().getPublishConfiguration();
     String key = publishConfiguration.getKey();
     String order = publishConfiguration.getOrder();
     if (key == null || key.isBlank() || order == null || order.isBlank()) {
@@ -147,7 +139,7 @@ public class Bot {
 
   /** Returns the hostname of this bot's container. */
   public String getHostname() {
-    return this.getBotHostname(this.botConfiguration.getId());
+    return this.getBotHostname(this.configuration.getId());
   }
 
   /**
@@ -170,14 +162,9 @@ public class Bot {
     return shutdownHandler;
   }
 
-  /** Returns the configuration of this bot's type */
-  public BotTypeConfiguration getTypeConfiguration() {
-    return botTypeConfiguration;
-  }
-
   /** Returns the configuration of this bot instance */
   public BotInstanceConfiguration getConfiguration() {
-    return botConfiguration;
+    return configuration;
   }
 
   /**
@@ -191,7 +178,7 @@ public class Bot {
     this.running = true;
     log.info("Connected to the message broker.");
 
-    if (this.getLifecycleConfiguration().getType() == BotLifecycleType.PROACTIVE) {
+    if (this.configuration.getLifecycleConfiguration().getType() == BotLifecycleType.PROACTIVE) {
       this.startProactiveScheduler();
     }
     this.setupHeartbeat();
@@ -210,7 +197,7 @@ public class Bot {
           "This bot is configured as a proactive bot, but no proactive task has been registered.");
     }
     ProactiveBotLifecycleConfiguration lifecycleConfiguration =
-        (ProactiveBotLifecycleConfiguration) this.getLifecycleConfiguration();
+        (ProactiveBotLifecycleConfiguration) this.configuration.getLifecycleConfiguration();
 
     ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     if (lifecycleConfiguration.getPeriod() > 0) {
@@ -273,11 +260,5 @@ public class Bot {
     this.boticaClient.close();
     this.running = false;
     log.info("Bot stopped.");
-  }
-
-  private BotLifecycleConfiguration getLifecycleConfiguration() {
-    return botConfiguration.getLifecycleConfiguration() != null
-        ? botConfiguration.getLifecycleConfiguration()
-        : botTypeConfiguration.getLifecycleConfiguration();
   }
 }

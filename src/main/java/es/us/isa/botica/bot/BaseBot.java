@@ -17,7 +17,8 @@ import java.lang.reflect.Type;
  * <p>Basic usage:
  *
  * <ul>
- *   <li><b>For proactive bots:</b> Define a periodic task using {@link ProactiveTask}:
+ *   <li><b>For proactive bots:</b> Define a periodic task using {@link
+ *       ProactiveTask @ProactiveTask}:
  *       <pre>
  * public class MyBot extends BaseBot {
  *
@@ -28,7 +29,7 @@ import java.lang.reflect.Type;
  *   }
  * }
  *       </pre>
- *   <li><b>For reactive bots:</b> Define order handlers using {@link OrderHandler}:
+ *   <li><b>For reactive bots:</b> Define order handlers using {@link OrderHandler @OrderHandler}:
  *       <pre>
  * public class MyBot extends BaseBot {
  *
@@ -41,7 +42,7 @@ import java.lang.reflect.Type;
  *       </pre>
  * </ul>
  *
- * <p>Use {@link BotLauncher#run(BaseBot, String[])} to start your bot.
+ * <p>Use {@link BotLauncher#run(BaseBot)} to start your bot.
  *
  * @author Alberto Mimbrero
  */
@@ -105,7 +106,7 @@ public abstract class BaseBot {
 
   /** Returns the type of this bot. */
   protected String getBotType() {
-    return this.bot.getTypeConfiguration().getId();
+    return this.bot.getConfiguration().getTypeConfiguration().getId();
   }
 
   /**

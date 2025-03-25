@@ -24,8 +24,16 @@ public final class BotLauncher {
   private BotLauncher() {}
 
   /**
-   * Loads the configuration for the bot instance running in the current container and starts the
-   * given bot.
+   * Loads the configuration for the bot running in the current container and starts the given bot.
+   *
+   * @param userBot the bot instance to configure and execute
+   */
+  public static void run(BaseBot userBot) {
+    run(userBot, null);
+  }
+
+  /**
+   * Loads the configuration for the bot running in the current container and starts the given bot.
    *
    * @param userBot the bot instance to configure and execute
    * @param args the application arguments, typically passed from the {@code main} method
@@ -35,11 +43,10 @@ public final class BotLauncher {
     String botType = System.getenv("BOTICA_BOT_TYPE");
     String botId = System.getenv("BOTICA_BOT_ID");
 
-    BotTypeConfiguration typeConfiguration = configuration.getBotTypes().get(botType);
-    BotInstanceConfiguration botConfiguration = typeConfiguration.getInstances().get(botId);
-    BoticaClient boticaClient = buildClient(configuration, typeConfiguration, botConfiguration);
+    BotInstanceConfiguration botConfiguration = getBotConfiguration(configuration, botType, botId);
+    BoticaClient boticaClient = buildClient(configuration, botConfiguration);
 
-    Bot coreBot = new Bot(boticaClient, typeConfiguration, botConfiguration);
+    Bot coreBot = new Bot(boticaClient, botConfiguration);
     userBot.setBot(coreBot);
     userBot.configure();
 
@@ -56,21 +63,32 @@ public final class BotLauncher {
   private static MainConfiguration loadConfiguration() {
     if (!CONFIG_FILE.isFile()) {
       throw new IllegalStateException(
-          "Couldn't find the needed configuration file. Are you manually starting this bot? Bots "
+          "Not running inside a Botica environment. Are you manually starting this bot? Bots "
               + "should be started inside a container conveniently created by the botica director!");
     }
     ConfigurationFileLoader configurationFileLoader = new JacksonConfigurationFileLoader();
     return configurationFileLoader.load(CONFIG_FILE, MainConfiguration.class);
   }
 
+  private static BotInstanceConfiguration getBotConfiguration(
+      MainConfiguration configuration, String botType, String botId) {
+    BotTypeConfiguration typeConfiguration = configuration.getBotTypes().get(botType);
+    BotInstanceConfiguration botConfiguration = typeConfiguration.getDeclaredInstances().get(botId);
+
+    if (botConfiguration == null) { // it's a generic replica
+      botConfiguration = new BotInstanceConfiguration();
+      botConfiguration.setTypeConfiguration(typeConfiguration);
+      botConfiguration.setId(botId);
+    }
+    return botConfiguration;
+  }
+
   private static BoticaClient buildClient(
-      MainConfiguration mainConfiguration,
-      BotTypeConfiguration typeConfiguration,
-      BotInstanceConfiguration botConfiguration) {
+      MainConfiguration mainConfiguration, BotInstanceConfiguration botConfiguration) {
     BrokerConfiguration brokerConfiguration = mainConfiguration.getBrokerConfiguration();
     if (brokerConfiguration instanceof RabbitMqConfiguration) {
       return new RabbitMqBoticaClient(
-          mainConfiguration, typeConfiguration, botConfiguration, new JacksonPacketConverter());
+          mainConfiguration, botConfiguration, new JacksonPacketConverter());
     }
     throw new UnsupportedOperationException("Unsupported broker type");
   }

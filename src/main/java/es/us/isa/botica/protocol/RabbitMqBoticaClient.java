@@ -7,7 +7,6 @@ import es.us.isa.botica.configuration.MainConfiguration;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
 import es.us.isa.botica.configuration.bot.BotSubscribeConfiguration;
 import es.us.isa.botica.configuration.bot.BotSubscribeConfiguration.RoutingStrategy;
-import es.us.isa.botica.configuration.bot.BotTypeConfiguration;
 import es.us.isa.botica.configuration.broker.RabbitMqConfiguration;
 import es.us.isa.botica.protocol.client.BotPacket;
 import es.us.isa.botica.protocol.query.QueryHandler;
@@ -36,7 +35,6 @@ public class RabbitMqBoticaClient implements BoticaClient {
   private static final Logger log = LoggerFactory.getLogger(RabbitMqBoticaClient.class);
 
   private final MainConfiguration mainConfiguration;
-  private final BotTypeConfiguration typeConfiguration;
   private final BotInstanceConfiguration botConfiguration;
   private final PacketConverter packetConverter;
 
@@ -47,11 +45,9 @@ public class RabbitMqBoticaClient implements BoticaClient {
 
   public RabbitMqBoticaClient(
       MainConfiguration mainConfiguration,
-      BotTypeConfiguration typeConfiguration,
       BotInstanceConfiguration botConfiguration,
       PacketConverter packetConverter) {
     this.mainConfiguration = mainConfiguration;
-    this.typeConfiguration = typeConfiguration;
     this.botConfiguration = botConfiguration;
     this.packetConverter = packetConverter;
 
@@ -92,16 +88,17 @@ public class RabbitMqBoticaClient implements BoticaClient {
 
   private void listenToOrders() {
     Set<RoutingStrategy> strategies =
-        typeConfiguration.getSubscribeConfigurations().stream()
+        botConfiguration.getTypeConfiguration().getSubscribeConfigurations().stream()
             .map(BotSubscribeConfiguration::getStrategy)
             .collect(Collectors.toSet());
 
+    String botTypeId = botConfiguration.getTypeConfiguration().getId();
     if (strategies.contains(RoutingStrategy.DISTRIBUTED)) {
-      String queue = String.format(BOT_TYPE_ORDERS_DISTRIBUTED_FORMAT, typeConfiguration.getId());
+      String queue = String.format(BOT_TYPE_ORDERS_DISTRIBUTED_FORMAT, botTypeId);
       this.listenToOrders(queue);
     }
     if (strategies.contains(RoutingStrategy.BROADCAST)) {
-      String queue = String.format(BOT_TYPE_ORDERS_BROADCAST_FORMAT, typeConfiguration.getId());
+      String queue = String.format(BOT_TYPE_ORDERS_BROADCAST_FORMAT, botTypeId);
       this.listenToOrders(queue);
     }
     this.listenToOwnQueue();
