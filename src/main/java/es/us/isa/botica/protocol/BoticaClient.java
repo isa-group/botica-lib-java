@@ -10,9 +10,9 @@ public interface BoticaClient {
 
   boolean isConnected();
 
-  void registerOrderListener(String order, OrderListener listener);
+  void registerOrderListener(String action, OrderListener listener);
 
-  void publishOrder(String key, String order, String message);
+  void publishOrder(String key, String action, String payload);
 
   <P extends Packet> void registerPacketListener(Class<P> packetClass, PacketListener<P> listener);
 

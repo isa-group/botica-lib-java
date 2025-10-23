@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * Marks a method as the default order handler for a bot.
  *
  * <p>Methods annotated with {@code @DefaultOrderHandler} will be automatically registered to handle
- * the default order defined in the bot's lifecycle configuration.
+ * the default action defined in the bot's lifecycle configuration.
  *
  * <p>Handler methods can have zero or one parameters. When a parameter is present, the system will
  * automatically convert the incoming message string to the parameter type using registered {@link
@@ -43,9 +43,9 @@ import java.lang.annotation.Target;
  * public class MyBot extends BaseBot {
  *
  *   &#64;DefaultOrderHandler
- *   public void handleOrder(String message) {
- *     System.out.println("Analyzing data: " + message);
- *     publishOrder("my message", "key", "order");
+ *   public void handleOrder(String payload) {
+ *     System.out.println("Analyzing data: " + payload);
+ *     publishOrder("key", "action", "my payload");
  *   }
  * }
  * </pre>
@@ -56,9 +56,9 @@ import java.lang.annotation.Target;
  * also be registered programmatically via the functional approach:
  *
  * <pre>
- * registerOrderListener(message -> {
- *   System.out.println("Analyzing data: " + message);
- *   publishOrder("my message", "key", "order");
+ * registerOrderListener(payload -> {
+ *   System.out.println("Analyzing data: " + payload);
+ *   publishOrder("key", "action", "my payload");
  * });
  * </pre>
  */

@@ -28,7 +28,7 @@ import java.lang.reflect.Type;
  *   &#64;ProactiveTask
  *   public void executeProactiveTask() {
  *     System.out.println("Executing proactive task...");
- *     publishOrder("my message", "key", "order");
+ *     publishOrder("key", "action", "payload");
  *   }
  * }
  *       </pre>
@@ -39,7 +39,7 @@ import java.lang.reflect.Type;
  *   &#64;OrderHandler("analyze_data")
  *   public void analyzeData(String data) {
  *     System.out.println("Analyzing data: " + data);
- *     publishOrder("my results", "key", "order");
+ *     publishOrder("key", "action", "my results");
  *   }
  * }
  *       </pre>
@@ -95,13 +95,13 @@ public abstract class BaseBot {
   }
 
   /**
-   * Registers the given listener for the provided order.
+   * Registers the given order listener for the provided action.
    *
-   * @param order the order to listen to
+   * @param action the action to listen to
    * @param orderListener the listener to register
    */
-  protected void registerOrderListener(String order, OrderListener orderListener) {
-    this.bot.registerOrderListener(order, orderListener);
+  protected void registerOrderListener(String action, OrderListener orderListener) {
+    this.bot.registerOrderListener(action, orderListener);
   }
 
   /** Returns the ID of this bot. */
@@ -115,8 +115,8 @@ public abstract class BaseBot {
   }
 
   /**
-   * Publishes an order with the given payload. The key and order are taken from the main
-   * configuration file.
+   * Publishes an order with the given payload. The key and action are taken from this bot's publish
+   * defaults section in the environment file.
    *
    * <p>The provided {@code payload} object is automatically serialized into a {@code String} before
    * being published. See {@link #publishOrder(String, String, Object)} for details on payload
@@ -125,12 +125,12 @@ public abstract class BaseBot {
    * @param payload the payload of the order
    * @throws IllegalStateException if the bot type configuration does not specify a publish section
    */
-  protected void publishOrder(Object payload) {
-    this.bot.publishOrder(payload);
+  protected void publishDefaultOrder(Object payload) {
+    this.bot.publishDefaultOrder(payload);
   }
 
   /**
-   * Publishes an order with the given key and order name.
+   * Publishes an order with the given key and action.
    *
    * <p>The provided {@code payload} object is automatically serialized into a {@code String} before
    * being published.
@@ -147,9 +147,6 @@ public abstract class BaseBot {
    * <p>Custom serialization logic for specific types can be provided by registering your own
    * implementations of {@link PayloadSerializer}. This allows you to control how various object
    * types are converted to strings for publishing.
-   *
-   * <p><strong>IMPORTANT:</strong> Serializers must be registered during the {@link #configure()}
-   * phase of the bot's lifecycle. Registrations made later may have no effect.
    *
    * <p><b>Usage example with a custom POJO:</b>
    *
@@ -168,18 +165,18 @@ public abstract class BaseBot {
    *   &#64;ProactiveTask
    *   public void executeProactiveTask() {
    *     MyCustomData data = new MyCustomData("hello", 123);
-   *     publishOrder("myKey", "myOrder", data);
+   *     publishOrder("myKey", "myAction", data);
    *     // This will automatically serialize 'data' to {"value":"hello","count":123}
    *   }
    * }
    * </pre>
    *
    * @param key the key to publish the order with
-   * @param order the order to publish
+   * @param action the action to publish
    * @param payload the payload of the order
    */
-  protected void publishOrder(String key, String order, Object payload) {
-    this.bot.publishOrder(key, order, payload);
+  protected void publishOrder(String key, String action, Object payload) {
+    this.bot.publishOrder(key, action, payload);
   }
 
   /** Returns the hostname of this bot's container. */

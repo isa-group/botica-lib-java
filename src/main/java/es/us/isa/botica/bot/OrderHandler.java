@@ -42,7 +42,7 @@ import java.lang.annotation.Target;
  *   &#64;OrderHandler("analyze_data")
  *   public void analyzeData(String data) {
  *     System.out.println("Analyzing data: " + data);
- *     publishOrder("my message", "key", "order");
+ *     publishOrder("key", "action", "my payload");
  *   }
  * }
  * </pre>
@@ -53,9 +53,9 @@ import java.lang.annotation.Target;
  * registered programmatically via the functional approach:
  *
  * <pre>
- * registerOrderListener("analyze_data", message -> {
- *   System.out.println("Analyzing data: " + message);
- *   publishOrder("my message", "key", "order");
+ * registerOrderListener("analyze_data", payload -> {
+ *   System.out.println("Analyzing data: " + payload);
+ *   publishOrder("key", "action", "my payload");
  * });
  * </pre>
  */
@@ -63,9 +63,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface OrderHandler {
   /**
-   * Specifies the orders this method listens to.
+   * Specifies the actions this method listens to.
    *
-   * @return the order names
+   * @return the action names
    */
   String[] value();
 }

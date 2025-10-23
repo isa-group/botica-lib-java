@@ -85,69 +85,70 @@ public class Bot {
   }
 
   /**
-   * Registers the given listener for the order this bot serves. The order is taken from the main
-   * configuration file.
+   * Registers the given listener for the default action of this bot (defined in the botica
+   * environment file).
    *
    * @param orderListener the listener to register
-   * @throws IllegalStateException if no default order is specified for this bot in the current
+   * @throws IllegalStateException if no default action is specified for this bot in the current
    *     botica environment configuration
    */
   public void registerOrderListener(OrderListener orderListener) {
     BotLifecycleConfiguration lifecycleConfiguration =
         this.configuration.getLifecycleConfiguration();
-    String order =
+    String action =
         lifecycleConfiguration instanceof ReactiveBotLifecycleConfiguration
-            ? ((ReactiveBotLifecycleConfiguration) lifecycleConfiguration).getOrder()
+            ? ((ReactiveBotLifecycleConfiguration) lifecycleConfiguration).getDefaultAction()
             : null;
 
-    if (order == null) {
+    if (action == null) {
       throw new IllegalStateException(
-          "No default order specified for this bot in the environment configuration file");
+          "No default action specified for this bot in the environment configuration file");
     }
-    this.registerOrderListener(order, orderListener);
+    this.registerOrderListener(action, orderListener);
   }
 
   /**
-   * Registers the given listener for the provided order.
+   * Registers the given order listener for the provided action.
    *
-   * @param order the order to listen to
+   * @param action the action to listen to
    * @param orderListener the listener to register
    */
-  public void registerOrderListener(String order, OrderListener orderListener) {
-    this.boticaClient.registerOrderListener(Objects.requireNonNull(order), orderListener);
+  public void registerOrderListener(String action, OrderListener orderListener) {
+    this.boticaClient.registerOrderListener(Objects.requireNonNull(action), orderListener);
   }
 
   /**
-   * Publishes an order with the given payload. The key and order are taken from the main
-   * configuration file.
+   * Publishes an order with the given payload. The key and action are taken from this bot's publish
+   * defaults section in the environment file.
    *
    * @param payload the payload of the order
-   * @throws IllegalStateException if the bot type configuration does not specify a publish section
+   * @throws IllegalStateException if the bot type configuration does not specify a publish defaults
+   *     section
    */
-  public void publishOrder(Object payload) {
+  public void publishDefaultOrder(Object payload) {
     BotPublishConfiguration publishConfiguration =
         this.configuration.getTypeConfiguration().getPublishConfiguration();
-    String key = publishConfiguration.getKey();
-    String order = publishConfiguration.getOrder();
-    if (key == null || key.isBlank() || order == null || order.isBlank()) {
+    String key = publishConfiguration.getDefaultKey();
+    String action = publishConfiguration.getDefaultAction();
+    if (key == null || key.isBlank() || action == null || action.isBlank()) {
       throw new IllegalStateException(
           "Cannot publish order: no publish section present in the bot type configuration.");
     }
-    this.publishOrder(key, order, payload);
+    this.publishOrder(key, action, payload);
   }
 
   /**
    * Publishes an order.
    *
    * @param key the key to publish the order with
-   * @param order the order to publish
-   * @param message the message of the order
+   * @param action the action of the order
+   * @param payload the payload of the order
    */
-  public void publishOrder(String key, String order, Object message) {
-    String serializedPayload = serializePayload(message);
+  public void publishOrder(String key, String action, Object payload) {
+    String serializedPayload = serializePayload(payload);
     this.boticaClient.publishOrder(
         Objects.requireNonNull(key),
-        Objects.requireNonNull(order),
+        Objects.requireNonNull(action),
         Objects.requireNonNull(serializedPayload));
   }
 

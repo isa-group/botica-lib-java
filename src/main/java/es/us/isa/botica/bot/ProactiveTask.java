@@ -20,7 +20,8 @@ import java.lang.annotation.Target;
  *
  *   &#64;ProactiveTask
  *   public void performTask() {
- *       System.out.println("Executing proactive task...");
+ *     System.out.println("Executing proactive task...");
+ *     publishOrder("key", "action", "my payload");
  *   }
  * }
  * </pre>
@@ -32,8 +33,7 @@ import java.lang.annotation.Target;
  *
  * <pre>
  * setProactiveTask(() -> {
- *   System.out.println("Analyzing data: " + message);
- *   publishOrder("my message", "key", "order");
+ *   publishOrder("key", "action", "my payload");
  * });
  * </pre>
  */

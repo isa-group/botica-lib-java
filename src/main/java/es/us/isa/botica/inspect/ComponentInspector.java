@@ -59,8 +59,8 @@ public class ComponentInspector {
 
       OrderHandler orderHandler = method.getAnnotation(OrderHandler.class);
       if (orderHandler != null) {
-        for (String order : orderHandler.value()) {
-          bot.registerOrderListener(order, buildOrderListener(component, method));
+        for (String action : orderHandler.value()) {
+          bot.registerOrderListener(action, buildOrderListener(component, method));
         }
       }
     }
@@ -68,11 +68,9 @@ public class ComponentInspector {
 
   private OrderListener buildOrderListener(Object component, Method method) {
     if (method.getParameterCount() == 0) {
-      return (order, payload) -> ReflectionUtils.invoke(method, component);
+      return (action, payload) -> ReflectionUtils.invoke(method, component);
     } else if (method.getParameterCount() == 1) {
-      return (order, payload) -> {
-        this.invokeOrderHandlerMethod(component, method, payload);
-      };
+      return (action, payload) -> this.invokeOrderHandlerMethod(component, method, payload);
     }
 
     throw new IllegalStateException(

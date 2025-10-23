@@ -118,16 +118,16 @@ public class RabbitMqBoticaClient implements BoticaClient {
         message -> {
           log.debug("Incoming message from queue {}: {}", queue, message);
           JSONObject root = new JSONObject(message);
-          this.callOrderListeners(root.getString("order"), root.getString("message"));
+          this.callOrderListeners(root.getString("action"), root.getString("payload"));
         });
   }
 
-  private void callOrderListeners(String order, String message) {
-    List<OrderListener> listeners = this.orderListeners.get(order);
+  private void callOrderListeners(String action, String payload) {
+    List<OrderListener> listeners = this.orderListeners.get(action);
     if (listeners == null) return;
     for (OrderListener listener : listeners) {
       try {
-        listener.onMessageReceived(order, message);
+        listener.onMessageReceived(action, payload);
       } catch (Exception e) {
         log.error("An exception was thrown while consuming an order.", e);
       }
@@ -140,14 +140,14 @@ public class RabbitMqBoticaClient implements BoticaClient {
   }
 
   @Override
-  public void registerOrderListener(String order, OrderListener listener) {
-    log.debug("New order listener for {}", order);
-    this.orderListeners.computeIfAbsent(order, k -> new ArrayList<>()).add(listener);
+  public void registerOrderListener(String action, OrderListener listener) {
+    log.debug("New order listener for {}", action);
+    this.orderListeners.computeIfAbsent(action, k -> new ArrayList<>()).add(listener);
   }
 
   @Override
-  public void publishOrder(String key, String order, String message) {
-    String json = new JSONObject(Map.of("order", order, "message", message)).toString();
+  public void publishOrder(String key, String action, String payload) {
+    String json = new JSONObject(Map.of("action", action, "payload", payload)).toString();
     log.debug("Publishing order with key {}: {}", key, json);
     this.rabbitClient.publish(ORDER_EXCHANGE, key, json);
   }

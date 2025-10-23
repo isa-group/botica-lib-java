@@ -7,6 +7,9 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Payload serializer for any basic POJOs (Plain Old Java Objects) using Jackson.
+ */
 public class JacksonPayloadSerializer implements PayloadSerializer<Object> {
   private final ObjectMapper objectMapper;
 
