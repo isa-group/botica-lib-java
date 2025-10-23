@@ -4,9 +4,9 @@ import es.us.isa.botica.bot.Bot;
 import es.us.isa.botica.bot.DefaultOrderHandler;
 import es.us.isa.botica.bot.OrderHandler;
 import es.us.isa.botica.bot.ProactiveTask;
-import es.us.isa.botica.bot.order.JsonObjectOrderMessageTypeConverter;
-import es.us.isa.botica.bot.order.OrderMessageTypeConverter;
-import es.us.isa.botica.bot.order.StringOrderMessageTypeConverter;
+import es.us.isa.botica.bot.payload.PayloadDeserializer;
+import es.us.isa.botica.bot.payload.support.JsonObjectPayloadDeserializer;
+import es.us.isa.botica.bot.payload.support.StringPayloadDeserializer;
 import es.us.isa.botica.bot.shutdown.ShutdownHandler;
 import es.us.isa.botica.bot.shutdown.ShutdownRequest;
 import es.us.isa.botica.bot.shutdown.ShutdownRequestHandler;
@@ -22,27 +22,27 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ComponentInspector {
-  private final Map<Type, OrderMessageTypeConverter<?>> orderMessageTypeConverters;
+  private final Map<Type, PayloadDeserializer<?>> payloadDeserializers;
 
   public ComponentInspector() {
-    this.orderMessageTypeConverters = new HashMap<>();
-    this.registerOrderMessageTypeConverter(new StringOrderMessageTypeConverter());
-    this.registerOrderMessageTypeConverter(new JsonObjectOrderMessageTypeConverter());
+    this.payloadDeserializers = new HashMap<>();
+    this.registerPayloadDeserializer(new StringPayloadDeserializer());
+    this.registerPayloadDeserializer(new JsonObjectPayloadDeserializer());
   }
 
-  public void registerOrderMessageTypeConverter(OrderMessageTypeConverter<?> converter) {
-    converter
+  public void registerPayloadDeserializer(PayloadDeserializer<?> deserializer) {
+    deserializer
         .getSupportedTypes()
-        .forEach(type -> this.registerOrderMessageTypeConverter(type, converter));
+        .forEach(type -> this.registerPayloadDeserializer(type, deserializer));
   }
 
-  public <T> void registerOrderMessageTypeConverter(
-      Class<? super T> type, OrderMessageTypeConverter<T> converter) {
-    this.registerOrderMessageTypeConverter((Type) type, converter);
+  public <T> void registerPayloadDeserializer(
+      Class<? super T> type, PayloadDeserializer<T> deserializer) {
+    this.registerPayloadDeserializer((Type) type, deserializer);
   }
 
-  public void registerOrderMessageTypeConverter(Type type, OrderMessageTypeConverter<?> converter) {
-    this.orderMessageTypeConverters.put(type, converter);
+  public void registerPayloadDeserializer(Type type, PayloadDeserializer<?> deserializer) {
+    this.payloadDeserializers.put(type, deserializer);
   }
 
   public void registerHandlerMethods(Bot bot, Class<?> componentClass, Object component) {
@@ -57,9 +57,9 @@ public class ComponentInspector {
         bot.registerOrderListener(buildOrderListener(component, method));
       }
 
-      if (method.isAnnotationPresent(OrderHandler.class)) {
-        String[] orders = method.getAnnotation(OrderHandler.class).value();
-        for (String order : orders) {
+      OrderHandler orderHandler = method.getAnnotation(OrderHandler.class);
+      if (orderHandler != null) {
+        for (String order : orderHandler.value()) {
           bot.registerOrderListener(order, buildOrderListener(component, method));
         }
       }
@@ -68,10 +68,10 @@ public class ComponentInspector {
 
   private OrderListener buildOrderListener(Object component, Method method) {
     if (method.getParameterCount() == 0) {
-      return (order, message) -> ReflectionUtils.invoke(method, component);
+      return (order, payload) -> ReflectionUtils.invoke(method, component);
     } else if (method.getParameterCount() == 1) {
-      return (order, message) -> {
-        this.invokeOrderHandlerMethod(component, method, message);
+      return (order, payload) -> {
+        this.invokeOrderHandlerMethod(component, method, payload);
       };
     }
 
@@ -81,27 +81,28 @@ public class ComponentInspector {
             method.toGenericString()));
   }
 
-  private void invokeOrderHandlerMethod(Object component, Method method, String message) {
+  private void invokeOrderHandlerMethod(Object component, Method method, String payload) {
     Parameter parameter = method.getParameters()[0];
     Item item = Item.fromParameter(parameter);
     Type type = item.getParameterizedType();
 
-    OrderMessageTypeConverter<?> converter = orderMessageTypeConverters.get(type);
-    if (converter != null) {
-      ReflectionUtils.invoke(method, component, converter.convert(item, message));
+    PayloadDeserializer<?> deserializer = payloadDeserializers.get(type);
+    if (deserializer != null) {
+      ReflectionUtils.invoke(method, component, deserializer.deserialize(item, payload));
       return;
     }
 
-    for (OrderMessageTypeConverter<?> registeredConverter : orderMessageTypeConverters.values()) {
-      if (registeredConverter.canConvert(item, message)) {
-        ReflectionUtils.invoke(method, component, registeredConverter.convert(item, message));
+    for (PayloadDeserializer<?> registeredDeserializer : payloadDeserializers.values()) {
+      if (registeredDeserializer.canDeserialize(item, payload)) {
+        ReflectionUtils.invoke(
+            method, component, registeredDeserializer.deserialize(item, payload));
         return;
       }
     }
 
     throw new IllegalStateException(
         String.format(
-            "No type converter found for the %s parameter in method %s",
+            "No payload deserializer found for the %s parameter in method %s",
             parameter, parameter.getDeclaringExecutable().toGenericString()));
   }
 

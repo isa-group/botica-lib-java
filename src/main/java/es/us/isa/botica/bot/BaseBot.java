@@ -1,7 +1,10 @@
 package es.us.isa.botica.bot;
 
-import es.us.isa.botica.bot.order.OrderMessageTypeConverter;
+import es.us.isa.botica.bot.payload.PayloadDeserializer;
+import es.us.isa.botica.bot.payload.PayloadSerializer;
+import es.us.isa.botica.bot.payload.support.JacksonPayloadSerializer;
 import es.us.isa.botica.bot.shutdown.ShutdownHandler;
+import es.us.isa.botica.bot.shutdown.ShutdownRequestHook;
 import es.us.isa.botica.inspect.ComponentInspector;
 import es.us.isa.botica.protocol.OrderListener;
 import java.io.File;
@@ -56,9 +59,11 @@ public abstract class BaseBot {
    * <p>Override this method to perform additional configuration, such as:
    *
    * <ul>
-   *   <li>Registering shutdown hooks
-   *   <li>Setting up additional order listeners programmatically
-   *   <li>Registering {@link OrderMessageTypeConverter order message type converters}
+   *   <li>Registering {@link ShutdownRequestHook shutdown hooks}
+   *   <li>Setting up additional order listeners {@link #registerOrderListener(String,
+   *       OrderListener) programmatically}
+   *   <li>Registering {@link #registerPayloadSerializer(PayloadSerializer) payload serializers} and
+   *       {@link #registerPayloadDeserializer(PayloadDeserializer) deserializers}
    * </ul>
    *
    * <p><b>Note:</b> This method is intended only for bot configuration. The connection with the
@@ -110,25 +115,71 @@ public abstract class BaseBot {
   }
 
   /**
-   * Publishes an order with the given message. The key and order are taken from the main
+   * Publishes an order with the given payload. The key and order are taken from the main
    * configuration file.
    *
-   * @param message the message of the order
+   * <p>The provided {@code payload} object is automatically serialized into a {@code String} before
+   * being published. See {@link #publishOrder(String, String, Object)} for details on payload
+   * serialization.
+   *
+   * @param payload the payload of the order
    * @throws IllegalStateException if the bot type configuration does not specify a publish section
    */
-  protected void publishOrder(String message) {
-    this.bot.publishOrder(message);
+  protected void publishOrder(Object payload) {
+    this.bot.publishOrder(payload);
   }
 
   /**
-   * Publishes an order with the given key.
+   * Publishes an order with the given key and order name.
+   *
+   * <p>The provided {@code payload} object is automatically serialized into a {@code String} before
+   * being published.
+   *
+   * <p>By default, the system supports the following payload types:
+   *
+   * <ul>
+   *   <li>{@code String} payloads (passed directly without modification).
+   *   <li>{@code org.json.JSONObject} payloads (converted to their JSON string representation).
+   *   <li>Any other Java type will be automatically serialized to a JSON string using an internal
+   *       {@link JacksonPayloadSerializer}.
+   * </ul>
+   *
+   * <p>Custom serialization logic for specific types can be provided by registering your own
+   * implementations of {@link PayloadSerializer}. This allows you to control how various object
+   * types are converted to strings for publishing.
+   *
+   * <p><strong>IMPORTANT:</strong> Serializers must be registered during the {@link #configure()}
+   * phase of the bot's lifecycle. Registrations made later may have no effect.
+   *
+   * <p><b>Usage example with a custom POJO:</b>
+   *
+   * <pre>
+   * public class MyBot extends BaseBot {
+   *   static class MyCustomData {
+   *     public String value;
+   *     public int count;
+   *
+   *     public MyCustomData(String value, int count) {
+   *       this.value = value;
+   *       this.count = count;
+   *     }
+   *   }
+   *
+   *   &#64;ProactiveTask
+   *   public void executeProactiveTask() {
+   *     MyCustomData data = new MyCustomData("hello", 123);
+   *     publishOrder("myKey", "myOrder", data);
+   *     // This will automatically serialize 'data' to {"value":"hello","count":123}
+   *   }
+   * }
+   * </pre>
    *
    * @param key the key to publish the order with
    * @param order the order to publish
-   * @param message the message of the order
+   * @param payload the payload of the order
    */
-  protected void publishOrder(String key, String order, String message) {
-    this.bot.publishOrder(key, order, message);
+  protected void publishOrder(String key, String order, Object payload) {
+    this.bot.publishOrder(key, order, payload);
   }
 
   /** Returns the hostname of this bot's container. */
@@ -161,57 +212,91 @@ public abstract class BaseBot {
   }
 
   /**
-   * Registers a type converter for handling parameters in {@code @OrderHandler} methods.
+   * Registers a payload deserializer for handling parameters in {@code @OrderHandler} methods.
    *
-   * <p>This converter will transform incoming message strings into objects of the types provided in
-   * the given converter when a handler method expects a parameter of the registered type.
-   *
-   * <p><strong>IMPORTANT:</strong> Converters must be registered during the {@link #configure()}
+   * <p><strong>IMPORTANT:</strong> Deserializers must be registered during the {@link #configure()}
    * phase of the bot's lifecycle. Registrations made later may have no effect.
    *
-   * @param converter the converter implementation for transforming messages of the specified types
-   *     in {@link OrderMessageTypeConverter#getSupportedTypes()}
-   * @see OrderMessageTypeConverter
+   * @param deserializer the deserializer implementation
+   * @see PayloadDeserializer
    */
-  protected void registerOrderMessageTypeConverter(OrderMessageTypeConverter<?> converter) {
-    this.componentInspector.registerOrderMessageTypeConverter(converter);
+  protected void registerPayloadDeserializer(PayloadDeserializer<?> deserializer) {
+    this.componentInspector.registerPayloadDeserializer(deserializer);
   }
 
   /**
-   * Registers a type converter for handling parameters in {@code @OrderHandler} methods.
+   * Registers a payload deserializer for handling parameters in {@code @OrderHandler} methods.
    *
-   * <p>This converter will transform incoming message strings into objects of type {@code T} when a
-   * handler method expects a parameter of the registered type.
-   *
-   * <p><strong>IMPORTANT:</strong> Converters must be registered during the {@link #configure()}
+   * <p><strong>IMPORTANT:</strong> Deserializers must be registered during the {@link #configure()}
    * phase of the bot's lifecycle. Registrations made later may have no effect.
    *
-   * @param <T> the target type that the converter produces
-   * @param type the class representing the parameter type this converter handles
-   * @param converter the converter implementation for transforming messages to type T
-   * @see OrderMessageTypeConverter
+   * @param <T> the target type that the deserializer produces
+   * @param type the class representing the parameter type this deserializer handles
+   * @param deserializer the deserializer implementation
+   * @see PayloadDeserializer
    */
-  protected <T> void registerOrderMessageTypeConverter(
-      Class<T> type, OrderMessageTypeConverter<T> converter) {
-    this.componentInspector.registerOrderMessageTypeConverter(type, converter);
+  protected <T> void registerPayloadDeserializer(
+      Class<T> type, PayloadDeserializer<T> deserializer) {
+    this.componentInspector.registerPayloadDeserializer(type, deserializer);
   }
 
   /**
-   * Registers a type converter for handling parameters in {@code @OrderHandler} methods.
+   * Registers a payload deserializer for handling parameters in {@code @OrderHandler} methods.
    *
-   * <p>This converter will transform incoming message strings into objects of the given type when a
-   * handler method expects a parameter of the registered type.
-   *
-   * <p><strong>IMPORTANT:</strong> Converters must be registered during the {@link #configure()}
+   * <p><strong>IMPORTANT:</strong> Deserializers must be registered during the {@link #configure()}
    * phase of the bot's lifecycle. Registrations made later may have no effect.
    *
-   * @param type the class representing the parameter type this converter handles
-   * @param converter the converter implementation for transforming messages to the given type
-   * @see OrderMessageTypeConverter
+   * @param type the type representing the parameter type this deserializer handles
+   * @param deserializer the deserializer implementation
+   * @see PayloadDeserializer
    */
-  protected void registerOrderMessageTypeConverter(
-      Type type, OrderMessageTypeConverter<?> converter) {
-    this.componentInspector.registerOrderMessageTypeConverter(type, converter);
+  protected void registerPayloadDeserializer(Type type, PayloadDeserializer<?> deserializer) {
+    this.componentInspector.registerPayloadDeserializer(type, deserializer);
+  }
+
+  /**
+   * Registers a payload serializer for handling object serialization in {@code publishOrder}
+   * methods.
+   *
+   * <p><strong>IMPORTANT:</strong> Serializers must be registered during the {@link #configure()}
+   * phase of the bot's lifecycle. Registrations made later may have no effect.
+   *
+   * @param serializer the serializer implementation
+   * @see PayloadSerializer
+   */
+  protected void registerPayloadSerializer(PayloadSerializer<?> serializer) {
+    this.bot.registerPayloadSerializer(serializer);
+  }
+
+  /**
+   * Registers a payload serializer for handling object serialization in {@code publishOrder}
+   * methods.
+   *
+   * <p><strong>IMPORTANT:</strong> Serializers must be registered during the {@link #configure()}
+   * phase of the bot's lifecycle. Registrations made later may have no effect.
+   *
+   * @param <T> the source type that the serializer handles
+   * @param type the class representing the object type this serializer handles
+   * @param serializer the serializer implementation
+   * @see PayloadSerializer
+   */
+  protected <T> void registerPayloadSerializer(Class<T> type, PayloadSerializer<T> serializer) {
+    this.bot.registerPayloadSerializer(type, serializer);
+  }
+
+  /**
+   * Registers a payload serializer for handling object serialization in {@code publishOrder}
+   * methods.
+   *
+   * <p><strong>IMPORTANT:</strong> Serializers must be registered during the {@link #configure()}
+   * phase of the bot's lifecycle. Registrations made later may have no effect.
+   *
+   * @param type the type representing the object type this serializer handles
+   * @param serializer the serializer implementation
+   * @see PayloadSerializer
+   */
+  protected void registerPayloadSerializer(Type type, PayloadSerializer<?> serializer) {
+    this.bot.registerPayloadSerializer(type, serializer);
   }
 
   /** Returns the underlying {@link Bot} instance of this object. */

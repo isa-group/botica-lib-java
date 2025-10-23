@@ -1,6 +1,10 @@
 package es.us.isa.botica.bot;
 
 import es.us.isa.botica.BoticaConstants;
+import es.us.isa.botica.bot.payload.PayloadSerializer;
+import es.us.isa.botica.bot.payload.support.JacksonPayloadSerializer;
+import es.us.isa.botica.bot.payload.support.JsonObjectPayloadSerializer;
+import es.us.isa.botica.bot.payload.support.StringPayloadSerializer;
 import es.us.isa.botica.bot.shutdown.ShutdownHandler;
 import es.us.isa.botica.configuration.bot.BotInstanceConfiguration;
 import es.us.isa.botica.configuration.bot.BotPublishConfiguration;
@@ -13,6 +17,9 @@ import es.us.isa.botica.protocol.HeartbeatPacket;
 import es.us.isa.botica.protocol.OrderListener;
 import es.us.isa.botica.protocol.client.ReadyPacket;
 import java.io.File;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,7 +31,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A bot instance in a botica environment.
  *
- * <p>{@link #start() Starting} the bot does not block any thread. Necessary threads are started
+ * <p>{@link #start() Starting} the bot does not block any thread. The necessary threads are started
  * internally for broker message listeners and other tasks.
  *
  * <p><b>NOTE:</b> it is recommended to extend the {@link BaseBot} helper class and use its
@@ -41,6 +48,8 @@ public class Bot {
   private final BotInstanceConfiguration configuration;
   private final ShutdownHandler shutdownHandler;
 
+  private final Map<Type, PayloadSerializer<?>> payloadSerializers = new HashMap<>();
+
   private boolean running = false;
   private Runnable proactiveTask;
 
@@ -48,6 +57,10 @@ public class Bot {
     this.boticaClient = boticaClient;
     this.configuration = configuration;
     this.shutdownHandler = new ShutdownHandler(this.boticaClient);
+
+    this.registerPayloadSerializer(new StringPayloadSerializer());
+    this.registerPayloadSerializer(new JsonObjectPayloadSerializer());
+    this.registerPayloadSerializer(new JacksonPayloadSerializer());
 
     this.log = LoggerFactory.getLogger("Bot - " + configuration.getId());
   }
@@ -105,13 +118,13 @@ public class Bot {
   }
 
   /**
-   * Publishes an order with the given message. The key and order are taken from the main
+   * Publishes an order with the given payload. The key and order are taken from the main
    * configuration file.
    *
-   * @param message the message of the order
+   * @param payload the payload of the order
    * @throws IllegalStateException if the bot type configuration does not specify a publish section
    */
-  public void publishOrder(String message) {
+  public void publishOrder(Object payload) {
     BotPublishConfiguration publishConfiguration =
         this.configuration.getTypeConfiguration().getPublishConfiguration();
     String key = publishConfiguration.getKey();
@@ -120,21 +133,44 @@ public class Bot {
       throw new IllegalStateException(
           "Cannot publish order: no publish section present in the bot type configuration.");
     }
-    this.publishOrder(publishConfiguration.getKey(), publishConfiguration.getOrder(), message);
+    this.publishOrder(key, order, payload);
   }
 
   /**
-   * Publishes an order with the given key.
+   * Publishes an order.
    *
    * @param key the key to publish the order with
    * @param order the order to publish
    * @param message the message of the order
    */
-  public void publishOrder(String key, String order, String message) {
+  public void publishOrder(String key, String order, Object message) {
+    String serializedPayload = serializePayload(message);
     this.boticaClient.publishOrder(
         Objects.requireNonNull(key),
         Objects.requireNonNull(order),
-        Objects.requireNonNull(message));
+        Objects.requireNonNull(serializedPayload));
+  }
+
+  @SuppressWarnings("unchecked")
+  private String serializePayload(Object payload) {
+    if (payload == null) {
+      throw new IllegalArgumentException("Payload cannot be null");
+    }
+
+    PayloadSerializer<?> serializer = payloadSerializers.get(payload.getClass());
+    if (serializer != null) {
+      return ((PayloadSerializer<Object>) serializer).serialize(payload);
+    }
+
+    for (PayloadSerializer<?> registeredSerializer : payloadSerializers.values()) {
+      if (registeredSerializer.canSerialize(payload)) {
+        return ((PayloadSerializer<Object>) registeredSerializer).serialize(payload);
+      }
+    }
+
+    throw new IllegalStateException(
+        String.format(
+            "No payload serializer found for object of type %s", payload.getClass().getName()));
   }
 
   /** Returns the hostname of this bot's container. */
@@ -165,6 +201,21 @@ public class Bot {
   /** Returns the configuration of this bot instance */
   public BotInstanceConfiguration getConfiguration() {
     return configuration;
+  }
+
+  public void registerPayloadSerializer(PayloadSerializer<?> serializer) {
+    serializer
+        .getSupportedTypes()
+        .forEach(type -> this.registerPayloadSerializer(type, serializer));
+  }
+
+  public <T> void registerPayloadSerializer(
+      Class<? super T> type, PayloadSerializer<T> serializer) {
+    this.registerPayloadSerializer((Type) type, serializer);
+  }
+
+  public void registerPayloadSerializer(Type type, PayloadSerializer<?> serializer) {
+    this.payloadSerializers.put(type, serializer);
   }
 
   /**

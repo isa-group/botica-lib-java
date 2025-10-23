@@ -1,22 +1,23 @@
-package es.us.isa.botica.bot.order;
+package es.us.isa.botica.bot.payload.support;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import es.us.isa.botica.bot.payload.PayloadDeserializer;
 import es.us.isa.botica.inspect.Item;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 
-public class JacksonOrderMessageTypeConverter implements OrderMessageTypeConverter<Object> {
+public class JacksonPayloadDeserializer implements PayloadDeserializer<Object> {
   private final ObjectMapper objectMapper;
 
-  public JacksonOrderMessageTypeConverter() {
+  public JacksonPayloadDeserializer() {
     this(new ObjectMapper());
   }
 
-  public JacksonOrderMessageTypeConverter(ObjectMapper objectMapper) {
+  public JacksonPayloadDeserializer(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
@@ -26,15 +27,15 @@ public class JacksonOrderMessageTypeConverter implements OrderMessageTypeConvert
   }
 
   @Override
-  public boolean canConvert(Item item, String message) {
+  public boolean canDeserialize(Item item, String payload) {
     return true;
   }
 
   @Override
-  public Object convert(Item item, String message) {
+  public Object deserialize(Item item, String payload) {
     JavaType type = TypeFactory.defaultInstance().constructType(item.getParameterizedType());
     try {
-      return objectMapper.readValue(message, type);
+      return objectMapper.readValue(payload, type);
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
