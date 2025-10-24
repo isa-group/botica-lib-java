@@ -3,6 +3,7 @@ package es.us.isa.botica.bot.shutdown;
 import es.us.isa.botica.protocol.BoticaClient;
 import es.us.isa.botica.protocol.client.ShutdownResponsePacket;
 import es.us.isa.botica.protocol.server.ShutdownRequestPacket;
+import es.us.isa.botica.util.annotation.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -35,7 +36,8 @@ public class ShutdownHandler {
     this.shutdownRequestHooks.remove(hook);
   }
 
-  private ShutdownResponsePacket onShutdownRequest(ShutdownRequestPacket packet) {
+  @VisibleForTesting
+  ShutdownResponsePacket onShutdownRequest(ShutdownRequestPacket packet) {
     ShutdownRequest request = new ShutdownRequest(packet.isForced());
     ShutdownResponse response = new ShutdownResponse();
     for (ShutdownRequestHook hook : this.shutdownRequestHooks) {
