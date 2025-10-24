@@ -8,6 +8,7 @@ import es.us.isa.botica.configuration.broker.RabbitMqConfiguration;
 import es.us.isa.botica.protocol.BoticaClient;
 import es.us.isa.botica.protocol.JacksonPacketConverter;
 import es.us.isa.botica.protocol.RabbitMqBoticaClient;
+import es.us.isa.botica.util.annotation.VisibleForTesting;
 import es.us.isa.botica.util.configuration.ConfigurationFileLoader;
 import es.us.isa.botica.util.configuration.jackson.JacksonConfigurationFileLoader;
 import java.io.File;
@@ -39,10 +40,12 @@ public final class BotLauncher {
    * @param args the application arguments, typically passed from the {@code main} method
    */
   public static void run(BaseBot userBot, String[] args) {
-    MainConfiguration configuration = loadConfiguration();
-    String botType = System.getenv("BOTICA_BOT_TYPE");
-    String botId = System.getenv("BOTICA_BOT_ID");
+    String botType = System.getProperty("BOTICA_BOT_TYPE");
+    String botId = System.getProperty("BOTICA_BOT_ID");
 
+    if (botType == null || botId == null) throwNoBoticaEnvironmentException();
+
+    MainConfiguration configuration = loadConfiguration();
     BotInstanceConfiguration botConfiguration = getBotConfiguration(configuration, botType, botId);
     BoticaClient boticaClient = buildClient(configuration, botConfiguration);
 
@@ -61,11 +64,8 @@ public final class BotLauncher {
   }
 
   private static MainConfiguration loadConfiguration() {
-    if (!CONFIG_FILE.isFile()) {
-      throw new IllegalStateException(
-          "Not running inside a Botica environment. Are you manually starting this bot? Bots "
-              + "should be started inside a container conveniently created by the botica director!");
-    }
+    if (!CONFIG_FILE.isFile()) throwNoBoticaEnvironmentException();
+
     ConfigurationFileLoader configurationFileLoader = new JacksonConfigurationFileLoader();
     return configurationFileLoader.load(CONFIG_FILE, MainConfiguration.class);
   }
@@ -91,5 +91,11 @@ public final class BotLauncher {
           mainConfiguration, botConfiguration, new JacksonPacketConverter());
     }
     throw new UnsupportedOperationException("Unsupported broker type");
+  }
+
+  private static void throwNoBoticaEnvironmentException() {
+    throw new IllegalStateException(
+        "Not running inside a Botica environment. Are you manually starting this bot? Bots "
+            + "should be started inside a container conveniently created by the botica director!");
   }
 }
