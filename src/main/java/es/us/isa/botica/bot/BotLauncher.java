@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException;
  * @author Alberto Mimbrero
  */
 public final class BotLauncher {
-  private static final File CONFIG_FILE = new File("/run/secrets/botica-config");
+  @VisibleForTesting static File CONFIG_FILE = new File("/run/secrets/botica-config");
 
   private BotLauncher() {}
 
