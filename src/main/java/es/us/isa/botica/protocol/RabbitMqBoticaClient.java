@@ -14,6 +14,7 @@ import es.us.isa.botica.protocol.query.RequestPacket;
 import es.us.isa.botica.protocol.query.ResponsePacket;
 import es.us.isa.botica.rabbitmq.RabbitMqClient;
 import es.us.isa.botica.util.ExecutorUtils;
+import es.us.isa.botica.util.annotation.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,12 +48,26 @@ public class RabbitMqBoticaClient implements BoticaClient {
       MainConfiguration mainConfiguration,
       BotInstanceConfiguration botConfiguration,
       PacketConverter packetConverter) {
+    this(
+        mainConfiguration,
+        botConfiguration,
+        packetConverter,
+        new RabbitMqClient(),
+        new QueryHandler(ExecutorUtils.newDaemonSingleThreadScheduledExecutor()));
+  }
+
+  @VisibleForTesting
+  RabbitMqBoticaClient(
+      MainConfiguration mainConfiguration,
+      BotInstanceConfiguration botConfiguration,
+      PacketConverter packetConverter,
+      RabbitMqClient rabbitClient,
+      QueryHandler queryHandler) {
     this.mainConfiguration = mainConfiguration;
     this.botConfiguration = botConfiguration;
     this.packetConverter = packetConverter;
-
-    this.queryHandler = new QueryHandler(ExecutorUtils.newDaemonSingleThreadScheduledExecutor());
-    this.rabbitClient = new RabbitMqClient();
+    this.rabbitClient = rabbitClient;
+    this.queryHandler = queryHandler;
   }
 
   @Override
