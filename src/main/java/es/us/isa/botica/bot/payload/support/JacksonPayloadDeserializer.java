@@ -10,9 +10,7 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Payload deserializer for any basic POJOs (Plain Old Java Objects) using Jackson.
- */
+/** Payload deserializer for any basic POJOs (Plain Old Java Objects) using Jackson. */
 public class JacksonPayloadDeserializer implements PayloadDeserializer<Object> {
   private final ObjectMapper objectMapper;
 
@@ -31,7 +29,8 @@ public class JacksonPayloadDeserializer implements PayloadDeserializer<Object> {
 
   @Override
   public boolean canDeserialize(Item item, String payload) {
-    return true;
+    return objectMapper.canDeserialize(
+        TypeFactory.defaultInstance().constructType(item.getParameterizedType()));
   }
 
   @Override

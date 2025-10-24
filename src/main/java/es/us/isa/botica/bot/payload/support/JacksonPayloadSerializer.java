@@ -28,7 +28,7 @@ public class JacksonPayloadSerializer implements PayloadSerializer<Object> {
 
   @Override
   public boolean canSerialize(Object object) {
-    return true;
+    return objectMapper.canSerialize(object.getClass());
   }
 
   @Override
