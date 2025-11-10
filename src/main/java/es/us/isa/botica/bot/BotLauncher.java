@@ -40,8 +40,8 @@ public final class BotLauncher {
    * @param args the application arguments, typically passed from the {@code main} method
    */
   public static void run(BaseBot userBot, String[] args) {
-    String botType = System.getProperty("BOTICA_BOT_TYPE");
-    String botId = System.getProperty("BOTICA_BOT_ID");
+    String botType = System.getProperty("BOTICA_BOT_TYPE", System.getenv("BOTICA_BOT_TYPE"));
+    String botId = System.getProperty("BOTICA_BOT_ID", System.getenv("BOTICA_BOT_ID"));
 
     if (botType == null || botId == null) throwNoBoticaEnvironmentException();
 
