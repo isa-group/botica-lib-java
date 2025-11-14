@@ -71,12 +71,22 @@ class ComponentInspectorTest {
     }
   }
 
-  private static class ShutdownHandlerBot {
+  private static class VoidShutdownHandlerBot {
     boolean hookExecuted = false;
 
     @ShutdownRequestHandler
     public void onShutdown(ShutdownRequest request) {
       hookExecuted = true;
+    }
+  }
+
+  private static class ShutdownHandlerWithResponseBot {
+    boolean hookExecuted = false;
+
+    @ShutdownRequestHandler
+    public ShutdownResponse onShutdown(ShutdownRequest request) {
+      hookExecuted = true;
+      return ShutdownResponse.cancel();
     }
   }
 
@@ -176,10 +186,11 @@ class ComponentInspectorTest {
   }
 
   @Test
-  @DisplayName("registerHandlerMethods should register a @ShutdownRequestHandler method")
-  void registerHandlerMethods_registersShutdownRequestHandler() {
+  @DisplayName(
+      "registerHandlerMethods should register a void @ShutdownRequestHandler method")
+  void registerHandlerMethods_registersVoidShutdownRequestHandler() {
     // Arrange
-    ShutdownHandlerBot botImpl = new ShutdownHandlerBot();
+    VoidShutdownHandlerBot botImpl = new VoidShutdownHandlerBot();
 
     // Act
     inspector.registerHandlerMethods(mockBot, botImpl.getClass(), botImpl);
@@ -192,6 +203,28 @@ class ComponentInspectorTest {
     ShutdownResponse response = new ShutdownResponse();
     shutdownHookCaptor.getValue().onShutdownRequest(request, response);
     assertThat(botImpl.hookExecuted).isTrue();
+    assertThat(response.isCanceled()).isFalse();
+  }
+
+  @Test
+  @DisplayName(
+      "registerHandlerMethods should register a @ShutdownRequestHandler method returning ShutdownResponse")
+  void registerHandlerMethods_registersShutdownRequestHandlerWithResponse() {
+    // Arrange
+    ShutdownHandlerWithResponseBot botImpl = new ShutdownHandlerWithResponseBot();
+
+    // Act
+    inspector.registerHandlerMethods(mockBot, botImpl.getClass(), botImpl);
+
+    // Assert
+    verify(mockShutdownHandler, times(1)).registerShutdownRequestHook(shutdownHookCaptor.capture());
+
+    // Verify the hook works
+    ShutdownRequest request = new ShutdownRequest(false);
+    ShutdownResponse response = new ShutdownResponse();
+    shutdownHookCaptor.getValue().onShutdownRequest(request, response);
+    assertThat(botImpl.hookExecuted).isTrue();
+    assertThat(response.isCanceled()).isTrue();
   }
 
   @Test
