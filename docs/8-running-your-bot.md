@@ -153,7 +153,12 @@ containers, set up the message broker, and manage inter-bot communication.
    the [releases page of the Botica repository](https://github.com/isa-group/botica/releases):
     * For Linux/macOS: Download the `botica-director` executable.
     * For Windows: Download the `botica-director.cmd` executable.
-2. **Execute the Director**: Run the downloaded program from your terminal.
+2. **Add executable permissions (Linux/macOS only)**: After downloading on Linux or macOS, you must
+   grant execute permissions. Open your terminal, navigate to the download directory, and run:
+   ```bash
+   chmod +x botica-director
+   ```
+3. **Execute the Director**: Run the downloaded program from your terminal.
 
    ```bash
    # On Linux/macOS
