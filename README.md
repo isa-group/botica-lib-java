@@ -110,8 +110,12 @@ public class BotBootstrap {
 }
 ```
 
-At runtime, Botica provides your bot with the necessary environment details, such as its ID, type,
-and broker connection information, through automatically injected configuration objects.
+> [!NOTE]
+> Botica bots are designed to run exclusively within a Botica environment, not as standalone
+> applications. You cannot simply run the `main` method of your `BotBootstrap` class manually.
+>
+> Check out [Running your bot](docs/8-running-your-bot.md) in the documentation to learn how to run
+> your bot in a Botica environment.
 
 ## Further documentation
 

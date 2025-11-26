@@ -24,6 +24,8 @@ you through the implementation of various bot behaviors.
 7. **[Payload serializers and deserializers](7-payload-serializers-and-deserializers.md)**:
    Understand how Botica automatically converts Java objects to string payloads and back, and how to
    implement custom serializers and deserializers for complex data formats.
+8. **[Running your bot](8-running-your-bot.md)**: A step-by-step guide to building your bot into a
+   Docker image and deploying it within a Botica environment using the Botica Director.
 
 ## Botica Platform Documentation
 
