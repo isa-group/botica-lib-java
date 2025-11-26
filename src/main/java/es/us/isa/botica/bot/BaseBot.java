@@ -95,6 +95,18 @@ public abstract class BaseBot {
   }
 
   /**
+   * Registers the given listener for the default action of this bot (defined in the botica
+   * environment file).
+   *
+   * @param orderListener the listener to register
+   * @throws IllegalStateException if no default action is specified for this bot in the current
+   *     botica environment configuration
+   */
+  public void registerDefaultOrderListener(OrderListener orderListener) {
+    this.bot.registerDefaultOrderListener(orderListener);
+  }
+
+  /**
    * Registers the given order listener for the provided action.
    *
    * @param action the action to listen to

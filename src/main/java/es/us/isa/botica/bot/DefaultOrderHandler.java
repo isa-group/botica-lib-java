@@ -56,7 +56,7 @@ import java.lang.annotation.Target;
  * also be registered programmatically via the functional approach:
  *
  * <pre>
- * registerOrderListener(payload -> {
+ * registerDefaultOrderListener(payload -> {
  *   System.out.println("Analyzing data: " + payload);
  *   publishOrder("key", "action", "my payload");
  * });

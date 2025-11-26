@@ -92,7 +92,7 @@ public class Bot {
    * @throws IllegalStateException if no default action is specified for this bot in the current
    *     botica environment configuration
    */
-  public void registerOrderListener(OrderListener orderListener) {
+  public void registerDefaultOrderListener(OrderListener orderListener) {
     BotLifecycleConfiguration lifecycleConfiguration =
         this.configuration.getLifecycleConfiguration();
     String action =

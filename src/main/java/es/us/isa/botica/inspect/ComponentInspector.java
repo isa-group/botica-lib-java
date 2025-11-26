@@ -54,7 +54,7 @@ public class ComponentInspector {
   private void registerOrderHandlers(Bot bot, Class<?> componentClass, Object component) {
     for (Method method : ReflectionUtils.getAllDeclaredMethods(componentClass)) {
       if (method.isAnnotationPresent(DefaultOrderHandler.class)) {
-        bot.registerOrderListener(buildOrderListener(component, method));
+        bot.registerDefaultOrderListener(buildOrderListener(component, method));
       }
 
       OrderHandler orderHandler = method.getAnnotation(OrderHandler.class);

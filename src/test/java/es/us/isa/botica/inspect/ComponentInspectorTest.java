@@ -178,7 +178,7 @@ class ComponentInspectorTest {
     inspector.registerHandlerMethods(mockBot, botImpl.getClass(), botImpl);
 
     // Assert
-    verify(mockBot, times(1)).registerOrderListener(orderListenerCaptor.capture());
+    verify(mockBot, times(1)).registerDefaultOrderListener(orderListenerCaptor.capture());
 
     // Verify the listener works
     orderListenerCaptor.getValue().onMessageReceived("defaultAction", "testPayload");
