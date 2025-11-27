@@ -154,19 +154,16 @@ public class ComponentInspector {
 
   private void handleShutdownRequest(
       Method method, Object component, ShutdownRequest request, ShutdownResponse response) {
-    ShutdownResponse returnValue = null;
-
+    Object result;
     if (method.getParameterCount() == 0) {
-      ReflectionUtils.invoke(method, component);
+      result = ReflectionUtils.invoke(method, component);
     } else {
-      Object result = ReflectionUtils.invoke(method, component, request);
-      if (result instanceof ShutdownResponse) {
-        returnValue = (ShutdownResponse) result;
-      }
+      result = ReflectionUtils.invoke(method, component, request);
     }
 
-    if (returnValue != null) {
-      response.setCanceled(response.isCanceled() || returnValue.isCanceled());
+    if (request != null && result instanceof ShutdownResponse) {
+      ShutdownResponse returnedResponse = (ShutdownResponse) result;
+      response.setCanceled(response.isCanceled() || returnedResponse.isCanceled());
     }
   }
 }
