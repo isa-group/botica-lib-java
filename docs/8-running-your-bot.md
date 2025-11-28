@@ -20,7 +20,7 @@ public class MyBotBootstrap {
 }
 ```
 
-> [!NOTE]
+> [!IMPORTANT]
 > Botica bots are designed to run exclusively within a Botica environment, not as standalone
 > applications. You cannot simply run the `main` method of your `BotBootstrap` class manually. Keep
 > reading to learn how to run your bot in a Botica environment.
@@ -30,7 +30,12 @@ public class MyBotBootstrap {
 Regardless of how you set up your project, the first step is always to compile your bot's code and
 package it into a Docker container image.
 
+<details>
+<summary>
+
 ### Option 1: The easy way
+
+</summary>
 
 **If you started your project with
 the [botica-seed-java](https://github.com/isa-group/botica-seed-java) template**, this process is
@@ -70,7 +75,14 @@ automated for you.
    This script automatically compiles your Maven project, packages it into an executable JAR with
    all dependencies, and then builds a Docker image tagged as specified in your `pom.xml`.
 
+</details>
+
+<details>
+<summary>
+
 ### Option 2: For existing Maven projects (without the template)
+
+</summary>
 
 If you're integrating `botica-lib-java` into an existing Maven project, you'll need to manually
 configure your `pom.xml` for packaging and create a Dockerfile.
@@ -143,6 +155,8 @@ configure your `pom.xml` for packaging and create a Dockerfile.
    ```
 
    Ensure `my-org/my-bot` matches the image tag you'll use in your Botica environment configuration.
+
+</details>
 
 ## Step 2: Running the Botica Director
 

@@ -33,7 +33,6 @@ For a deeper understanding of the overall Botica platform, including concepts li
 configuration file, message routing strategies, and inter-bot communication paradigms, please refer
 to the main Botica documentation:
 
-
 - **[The concept of a bot](https://github.com/isa-group/botica/blob/main/docs/1-the-concept-of-a-bot.md)**
 - **[Creating process chains](https://github.com/isa-group/botica/blob/main/docs/2-process-chains.md)**
 - **[Messaging between bots](https://github.com/isa-group/botica/blob/main/docs/3-messaging-between-bots.md)**
@@ -42,21 +41,26 @@ to the main Botica documentation:
 
 ## Example Projects
 
-Explore these real-world and demonstrative projects built with `botica-lib-java` to see the concepts
-in action.
-
 - **[Botica Fishbowl](https://github.com/isa-group/botica-infrastructure-fishbowl)**:
-  A simulation of a 9x9 fishbowl where multiple fish bots move around and a manager bot tracks their
-  positions. This project showcases proactive (fish) and reactive (manager) bots written in both
-  Java and Node.js, demonstrating interlanguage communication and file system interaction.
-    - [Java Fish Bot](https://github.com/isa-group/botica-bot-fishbowl-fish-java)
-    - [Java Manager Bot](https://github.com/isa-group/botica-bot-fishbowl-manager)
+  A simulation of a 9x9 fishbowl where multiple fish bots move around and a manager bot tracks
+  their positions. This project showcases proactive (fish) and reactive (manager) bots written in
+  both Java and Node.js, demonstrating inter-language communication and file system interaction.
+    - **[Java Fish Bot](https://github.com/isa-group/botica-bot-fishbowl-fish-java)**: A proactive
+      bot that periodically publishes its position within the fishbowl.
+    - **[Java Manager Bot](https://github.com/isa-group/botica-bot-fishbowl-manager)**: A reactive
+      bot that listens for fish positions, logs the fishbowl state, and saves it to files.
 
+## Real-world projects
+Explore these real-world and demonstrative projects built with `botica-lib-java` to see the
+concepts in action.
 
 - **[Automatic REST API testing system with RESTest](https://github.com/isa-group/botica-infrastructure-restest)**:
-  A real-world application automating REST API testing. Generator bots create test cases,
-  executor bots run them, and reporter bots analyze results, demonstrating distributed processing
-  and complex workflow orchestration using various Java bots.
-    - [RESTest Generator Bot](https://github.com/isa-group/botica-bot-restest-generator)
-    - [RESTest Executor Bot](https://github.com/isa-group/botica-bot-restest-executor)
-    - [RESTest Reporter Bot](https://github.com/isa-group/botica-bot-restest-reporter)
+  A real-world application automating REST API testing. Generator bots create test cases, executor
+  bots run them, and reporter bots analyze results, demonstrating distributed processing and
+  complex workflow orchestration using various Java bots.
+    - **[RESTest Generator Bot](https://github.com/isa-group/botica-bot-restest-generator)**:
+      Generates test cases and execution plans from API specifications.
+    - **[RESTest Executor Bot](https://github.com/isa-group/botica-bot-restest-executor)**: Executes
+      generated test cases against a target REST API.
+    - **[RESTest Reporter Bot](https://github.com/isa-group/botica-bot-restest-reporter)**: Consumes
+      test results, performs analysis, and generates reports or dashboards.
