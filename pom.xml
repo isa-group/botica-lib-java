@@ -6,17 +6,42 @@
   <parent>
     <groupId>io.github.isa-group.botica</groupId>
     <artifactId>botica-parent</artifactId>
-    <version>0.6.0</version>
+    <version>0.6.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>botica-lib-java</artifactId>
-  <version>0.6.0</version>
+  <name>Botica Java Library</name>
+  <description>Java client library to implement Botica bots</description>
+  <url>https://github.com/isa-group/botica-lib-java</url>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>alberto-mimbrero</id>
+      <name>Alberto Mimbrero Sánchez</name>
+      <email>mimbrero@us.es</email>
+      <organization>ISA Group</organization>
+      <organizationUrl>https://www.isa.us.es/</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/isa-group/botica-lib-java.git</connection>
+    <developerConnection>scm:git:ssh://github.com:isa-group/botica-lib-java.git</developerConnection>
+    <url>https://github.com/isa-group/botica-lib-java/tree/main</url>
+  </scm>
 
   <dependencies>
     <dependency>
       <groupId>io.github.isa-group.botica</groupId>
       <artifactId>botica-core</artifactId>
-      <version>0.6.0</version>
+      <version>0.6.1-SNAPSHOT</version>
     </dependency>
   </dependencies>
 

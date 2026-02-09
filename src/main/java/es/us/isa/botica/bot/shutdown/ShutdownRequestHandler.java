@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * <p>Methods annotated with {@code @ShutdownRequestHandler} will be automatically detected and
  * registered to handle shutdown requests from the Botica director.
  *
- * <h4>Usage examples:</h4>
+ * <h2>Usage examples:</h2>
  *
  * <p><b>Saving important data:</b>
  *
