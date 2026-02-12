@@ -22,204 +22,102 @@ public class MyBotBootstrap {
 
 > [!IMPORTANT]
 > Botica bots are designed to run exclusively within a Botica environment, not as standalone
-> applications. You cannot simply run the `main` method of your `BotBootstrap` class manually. Keep
-> reading to learn how to run your bot in a Botica environment.
+> applications. You cannot simply run the `main` method of your `BotBootstrap` class manually.
 
-## Step 1: Building your bot's container image
+## How to run your bot
 
-Regardless of how you set up your project, the first step is always to compile your bot's code and
-package it into a Docker container image.
+How you run your bot depends on how you have structured your project.
 
-<details>
-<summary>
+### Option 1: Inside a Botica Project (Recommended)
 
-### Option 1: The easy way
+This is the standard and easiest way to develop with Botica. In this scenario, your bot's source
+code resides in a subdirectory within your main Botica project (a "monorepo" structure).
 
-</summary>
-
-**If you started your project with
-the [botica-seed-java](https://github.com/isa-group/botica-seed-java) template**, this process is
-automated for you.
-
-1. **Customize `pom.xml`**: Ensure your `pom.xml` has the correct `<imageTag>` property (e.g.,
-   `my-org/my-bot`). This tag identifies your bot's Docker image and must be referenced in your
-   Botica environment configuration file to deploy your bot.
-
-   ```xml
-   <project>
-     ...
-     <properties>
-       ...
-       <mainClass>com.myorg.MyBotBootstrap</mainClass>
-       <imageTag>my-org/my-bot</imageTag>
-     </properties>
-     ...
-   </project>
-   ```
-
-2. **Run the build script**: Navigate to your project's root directory in a terminal and execute the
-   provided build script.
-
-   #### On Linux or macOS
-
-   ```bash
-   ./build.sh
-   ```
-
-   #### On Windows
-
-   ```bash
-   build.bat
-   ```
-
-   This script automatically compiles your Maven project, packages it into an executable JAR with
-   all dependencies, and then builds a Docker image tagged as specified in your `pom.xml`.
-
-</details>
-
-<details>
-<summary>
-
-### Option 2: For existing Maven projects (without the template)
-
-</summary>
-
-If you're integrating `botica-lib-java` into an existing Maven project, you'll need to manually
-configure your `pom.xml` for packaging and create a Dockerfile.
-
-1. **Configure `pom.xml` for an executable JAR**: Add the `maven-assembly-plugin` to your `pom.xml`
-   to create a "jar-with-dependencies" that includes all necessary libraries, and ensure the
-   `mainClass` points to your bot's entry point.
-
-   ```xml
-   <build>
-     <plugins>
-       <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-assembly-plugin</artifactId>
-         <version>3.3.0</version>
-         <executions>
-           <execution>
-             <id>make-assembly</id>
-             <phase>package</phase>
-             <goals>
-               <goal>single</goal>
-             </goals>
-             <configuration>
-               <archive>
-                 <manifest>
-                   <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                   <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                   <mainClass>com.myorg.MyBotBootstrap</mainClass> <!-- YOUR BOT'S MAIN CLASS HERE -->
-                 </manifest>
-               </archive>
-               <finalName>bot</finalName> <!-- The name of your executable JAR -->
-               <appendAssemblyId>false</appendAssemblyId>
-               <descriptorRefs>
-                 <descriptorRef>jar-with-dependencies</descriptorRef>
-               </descriptorRefs>
-             </configuration>
-           </execution>
-         </executions>
-       </plugin>
-     </plugins>
-   </build>
-   ```
-
-2. **Create a Dockerfile**: In your project's root directory, create a `Dockerfile` to build your
-   bot's container image.
-
-   ```dockerfile
-   # Use a Java base image (adjust version as needed)
-   FROM eclipse-temurin:21
-
-   # Set the working directory inside the container
-   WORKDIR /app
-
-   # Copy the executable JAR from your Maven build output
-   # Make sure 'bot.jar' matches the <finalName> in your pom.xml
-   COPY target/bot.jar /app/bot.jar
-
-   # Command to run your bot
-   ENTRYPOINT ["java", "-jar", "bot.jar"]
-   ```
-
-3. **Build the Docker image**: Compile your project and then build the Docker image.
-
-   ```bash
-   # Compile your Maven project to generate the JAR
-   mvn clean install
-
-   # Build the Docker image (replace my-org/my-bot with your desired image tag)
-   docker build -t my-org/my-bot .
-   ```
-
-   Ensure `my-org/my-bot` matches the image tag you'll use in your Botica environment configuration.
-
-</details>
-
-## Step 2: Running the Botica Director
-
-The Botica Director is the orchestrator for your entire Botica environment. It will launch your bot
-containers, set up the message broker, and manage inter-bot communication.
-
-1. **Download the appropriate Director program** from
-   the [releases page of the Botica repository](https://github.com/isa-group/botica/releases):
-    * For Linux/macOS: Download the `botica-director` executable.
-    * For Windows: Download the `botica-director.cmd` executable.
-2. **Add executable permissions (Linux/macOS only)**: After downloading on Linux or macOS, you must
-   grant execute permissions. Open your terminal, navigate to the download directory, and run:
-   ```bash
-   chmod +x botica-director
-   ```
-3. **Execute the Director**: Run the downloaded program from your terminal.
-
-   ```bash
-   # On Linux/macOS
-   ./botica-director
-
-   # On Windows
-   botica-director.cmd
-   ```
-
-   The first time you run the Director in a directory, it will automatically create a default
-   `environment.yml` file if one doesn't exist. This is your Botica environment configuration file.
-
-## Step 3: Configure your environment and launch your bot
-
-Now that your bot's Docker image is built, and you have the Botica Director, you need to tell the
-Director about your bot.
-
-1. **Open the `environment.yml` file**: This file defines your entire Botica
-   environment.
-2. **Add your bot's configuration**: In the `bots` section, define a bot type for your Java bot.
-   Crucially, specify the `image` field with the Docker image tag you built in Step 1.
-
-   Example `environment.yml` snippet:
+1. **Configure `environment.yml`**: Point the `build` property to your bot's directory.
 
    ```yaml
    bots:
-     my_java_bot_type: # This is your bot type ID
-       image: "my-org/my-bot" # **MUST MATCH YOUR DOCKER IMAGE TAG**
-       replicas: 1 # Number of instances of this bot type to run
+     my_java_bot:
+       build: "./my-bot-directory" # Path to the directory containing the Dockerfile
+       replicas: 1
        subscribe:
          - key: "data_channel"
            strategy: distributed
    ```
 
-3. **Run the Botica Director again**: With your `environment.yml` updated, run the Director. It will
-   now create the necessary Docker containers, including your Java bot, and orchestrate their
-   communication.
+2. **Run the Director**:
+
+   Execute `./botica-director` on **Linux**/**macOS**, or `botica-director.cmd` on **Windows** in
+   your project's directory.
+
+The Director will automatically detect the `build` configuration, build the Docker image from the
+source code in `./my-bot-directory`, and launch the container.
+
+### Option 2: Separate Repository (Advanced)
+
+This approach is suitable if you prefer to manage your bot in a completely separate Git repository,
+or if you are building a **heavy bot** with complex dependencies, large files, or long compilation
+times that you don't want to rebuild frequently.
+
+In this scenario, you must build the Docker image yourself and tell Botica to use that pre-built
+image.
+
+1. **Build your bot image**:
+   You need to compile your code and package it into a Docker image.
+
+   <details>
+   <summary>Using the official template (Easy)</summary>
+
+   If you used the official `botica-seed-java` template, the `Dockerfile` and `pom.xml` are already
+   configured for you. You simply need to run the Docker build command.
+
+   Run this from your project root:
 
    ```bash
-   # On Linux/macOS
-   ./botica-director
-
-   # On Windows
-   botica-director.cmd
+   docker build -t my-org/my-bot:latest .
    ```
 
-   Your Java bot will start inside its container, connect to the message broker, and begin executing
-   its configured tasks or listening for orders.
+   Ensure the tag you use (e.g., `my-org/my-bot:latest`) matches what you put in `environment.yml`.
+   </details>
+
+   <details>
+   <summary>Manually (Custom/Existing Projects)</summary>
+
+   If you have a custom setup, you'll need to create a `Dockerfile` and build it manually.
+
+    1. **Create a Dockerfile**:
+       ```dockerfile
+       FROM eclipse-temurin:21
+       WORKDIR /app
+       COPY target/bot.jar /app/bot.jar
+       ENTRYPOINT ["java", "-jar", "bot.jar"]
+       ```
+
+    2. **Build the image**:
+       ```bash
+       mvn clean install
+       docker build -t my-org/heavy-bot .
+       ```
+   </details>
+
+2. **Configure `environment.yml`**:
+   Use the `image` property instead of `build`.
+
+   ```yaml
+   bots:
+     my_heavy_bot:
+       image: "my-org/heavy-bot" # Must match the tag you built
+       replicas: 1
+       subscribe:
+         - key: "data_channel"
+           strategy: distributed
+   ```
+
+3. **Run the Director**:
+
+   Execute `./botica-director` on **Linux**/**macOS**, or `botica-director.cmd` on **Windows** in
+   your project's directory.
+
+The Director will skip the build step and directly use the local Docker image `my-org/heavy-bot`.
 
 [Back to documentation index](0-index.md)

@@ -5,20 +5,23 @@ a [Botica](https://github.com/isa-group/botica) environment.
 
 ## Installation
 
-### Using the official template (recommended)
+### With botica-director
 
-If you are starting from scratch, we recommend using the official template to set up your project:  
+The easiest way to start is by using the `botica-director` CLI to initialize a new bot directly inside your Botica project. This sets up the directory structure, Dockerfile, and build configuration automatically.
+
+```bash
+# On Linux/macOS
+./botica-director init java my-bot-name
+
+# On Windows
+botica-director.cmd init java my-bot-name
+```
+
+### Using the official template
+
+If you prefer to maintain your bot in a separate repository, you can use the official template to
+set up your project:  
 https://github.com/isa-group/botica-seed-java
-
-This template contains:
-
-- A Maven project configured for Botica bots
-- Scripts for building and packaging your bot:
-    - `build.sh` (Linux/macOS)
-    - `build.bat` (Windows)
-- A Dockerfile preconfigured for Botica environments
-- Example bots implemented with the library
-- A `pom.xml` file exposing the `imageTag` property, used by the build scripts
 
 ### Using Maven
 
@@ -33,9 +36,9 @@ Add the library dependency in your `pom.xml`:
 ```
 
 > [!TIP]
-> We **really encourage** creating your bot's repository **using the official template**. It
-> contains build scripts that simplify the entire build process of your bot into a single step, from
-> compilation to Docker image creation.
+> We **really encourage** creating your bot's repository **using botica-director or the official
+> template**. They provide the necessary structure and Dockerfile to easily build and run your bot
+> within a Botica environment.
 
 ## Creating your first bot
 
